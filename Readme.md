@@ -1,3 +1,12 @@
+# Homie Room Sensor
+located in IKEAs Vindriktning
+
+after this upgrade it will measure:
+* air quality
+* temperatur
+* pressure
+* altitude
+
 ## Filesystem
 ### Configuration
 Use the config-example.json from the host folder and create here a config.json file.
@@ -28,8 +37,13 @@ VCC          |       GND
 ```
 
 The following pins are used:
-* GPIO4 PM1006 particle sensor
-* GPIO2 WS2812 stripe out of three LEDs, replacing the orignal LEDs at front
+* GPIO4  PM1006 particle sensor
+* GPIO2  WS2812 stripe out of three LEDs, replacing the orignal LEDs at front
+* GPIO15 Red LED
+* GPIO12 Green LED
+* GPIO13 Blue LED
+* GPIO14 I2C clock
+* GPIO5  I2C data pin
 
 # Sources
 * [https://github.com/amkuipers/witty Witty pinout]
