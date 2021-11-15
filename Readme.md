@@ -7,6 +7,8 @@ after this upgrade it will measure:
 * pressure
 * altitude
 
+The system can be powered by USB-C or Micro-USB, attached at ESP8266 board.
+
 ## Filesystem
 ### Configuration
 Use the config-example.json from the host folder and create here a config.json file.
@@ -39,11 +41,17 @@ VCC          |       GND
 The following pins are used:
 * GPIO4  PM1006 particle sensor
 * GPIO2  WS2812 stripe out of three LEDs, replacing the orignal LEDs at front
-* GPIO15 Red LED
-* GPIO12 Green LED
-* GPIO13 Blue LED
+* GPIO15 Red LED    (optional)
+* GPIO12 Green LED  (optional)
+* GPIO13 Blue LED   (optional)
 * GPIO14 I2C clock
 * GPIO5  I2C data pin
+
+# Bill of materials
+* IKEA Vindriktning
+* ESP8266 (e.g. Witty board)
+* BMP280 sensor
+* some wire
 
 # Sources
 * [https://github.com/amkuipers/witty Witty pinout]
