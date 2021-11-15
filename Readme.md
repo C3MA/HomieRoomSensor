@@ -44,6 +44,7 @@ The following pins are used:
 * GPIO15 Red LED    (optional)
 * GPIO12 Green LED  (optional)
 * GPIO13 Blue LED   (optional)
+* GPIO13 VCC of I2C (3.3 V)
 * GPIO14 I2C clock
 * GPIO5  I2C data pin
 
