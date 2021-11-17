@@ -48,6 +48,8 @@
 #define MQTT_LOG_INFO     20
 #define MQTT_LOG_DEBUG    90
 
+#define TEMPBORDER        20
+
 #define getTopic(test, topic)                                                                                                                 \
   char *topic = new char[strlen(Homie.getConfiguration().mqtt.baseTopic) + strlen(Homie.getConfiguration().deviceId) + 1 + strlen(test) + 1]; \
   strcpy(topic, Homie.getConfiguration().mqtt.baseTopic);                                                                                     \
@@ -83,6 +85,7 @@ HomieNode pressureNode(NODE_PRESSURE, "Pressure", "Room Pressure");
 HomieNode altitudeNode(NODE_ALTITUDE, "Altitude", "Room altitude");
 
 HomieSetting<bool> i2cEnable("i2c", "BMP280 sensor present");
+HomieSetting<bool> rgbTemp("rgbTemp", "Show temperatur via red (>20 °C) and blue (< 20°C)");
 
 static SoftwareSerial pmSerial(SENSOR_PM1006_RX, SENSOR_PM1006_TX);
 Adafruit_BMP280 bmp; // connected via I2C
@@ -176,6 +179,14 @@ void bmpPublishValues() {
   temperatureNode.setProperty(NODE_TEMPERATUR).send(String(bmp.readTemperature()));
   pressureNode.setProperty(NODE_PRESSURE).send(String(bmp.readPressure() / 100.0F));
   altitudeNode.setProperty(NODE_ALTITUDE).send(String(bmp.readAltitude(SEALEVELPRESSURE_HPA)));
+  if (rgbTemp.get()) {
+      if (bmp.readTemperature() < TEMPBORDER) {
+        strip.setPixelColor(0, strip.Color(0,0,255));
+      } else {
+        strip.setPixelColor(0, strip.Color(255,0,0));
+      }
+      strip.show();
+  }
 }
 
 /**
@@ -235,6 +246,7 @@ void setup()
   Homie.setLoopFunction(loopHandler);
   Homie.onEvent(onHomieEvent);
   i2cEnable.setDefaultValue(false);
+  rgbTemp.setDefaultValue(false);
   memset(serialRxBuf, 0, 80);
 
   pmSerial.begin(PM1006_BIT_RATE);
