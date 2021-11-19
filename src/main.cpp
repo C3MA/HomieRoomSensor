@@ -18,7 +18,7 @@
 #include <Adafruit_NeoPixel.h>
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
-#include <Adafruit_BMP280.h>
+#include "Adafruit_BME680.h"
 
 /******************************************************************************
  *                                     DEFINES
@@ -34,8 +34,8 @@
 #define PM1006_MQTT_UPDATE  5000 /**< Check the sensor every 10 seconds; New measurement is done every 20seconds by the sensor */
 #define PIXEL_COUNT         3
 #define GPIO_BUTTON   SENSOR_PM1006_RX /**< Button and software serial share one pin on Witty board */
-#define SENSOR_I2C_SCK    D5 /**< GPIO14 - I2C clock pin */
-#define SENSOR_I2C_SDI    D1 /**< GPIO5  - I2C data pin */
+#define SENSOR_I2C_SCK    D1 /**< GPIO14 - I2C clock pin */
+#define SENSOR_I2C_SDI    D5 /**< GPIO5  - I2C data pin */
 
 #define PM1006_BIT_RATE 9600
 #define PM1006_MQTT_UPDATE 5000 /**< Check the sensor every 10 seconds; New measurement is done every 20seconds by the sensor */
@@ -62,6 +62,9 @@
 #define NODE_TEMPERATUR                 "temp"
 #define NODE_PRESSURE                   "pressure"
 #define NODE_ALTITUDE                   "altitude"
+#define NODE_GAS                        "gas"
+#define NODE_HUMIDITY                   "humidity"
+
 /******************************************************************************
  *                                     TYPE DEFS
  ******************************************************************************/
@@ -83,12 +86,14 @@ HomieNode particle(NODE_PARTICE, "particle", "Particle"); /**< Measuret in micro
 HomieNode temperatureNode(NODE_TEMPERATUR, "Room Temperature", "Room Temperature");
 HomieNode pressureNode(NODE_PRESSURE, "Pressure", "Room Pressure");
 HomieNode altitudeNode(NODE_ALTITUDE, "Altitude", "Room altitude");
+HomieNode gasNode(NODE_GAS, "Gas", "Room gas");
+HomieNode humidityNode(NODE_HUMIDITY, "Humidity", "Room humidity");
 
-HomieSetting<bool> i2cEnable("i2c", "BMP280 sensor present");
+HomieSetting<bool> i2cEnable("i2c", "BME280 sensor present");
 HomieSetting<bool> rgbTemp("rgbTemp", "Show temperatur via red (>20 °C) and blue (< 20°C)");
 
 static SoftwareSerial pmSerial(SENSOR_PM1006_RX, SENSOR_PM1006_TX);
-Adafruit_BMP280 bmp; // connected via I2C
+Adafruit_BME680 bme(&Wire); // connected via I2C
 
 Adafruit_NeoPixel strip(PIXEL_COUNT, GPIO_WS2812, NEO_GRB + NEO_KHZ800);
 
@@ -176,11 +181,20 @@ void onHomieEvent(const HomieEvent &event)
 }
 
 void bmpPublishValues() {
-  temperatureNode.setProperty(NODE_TEMPERATUR).send(String(bmp.readTemperature()));
-  pressureNode.setProperty(NODE_PRESSURE).send(String(bmp.readPressure() / 100.0F));
-  altitudeNode.setProperty(NODE_ALTITUDE).send(String(bmp.readAltitude(SEALEVELPRESSURE_HPA)));
+  // Tell BME680 to begin measurement.
+  unsigned long endTime = bme.beginReading();
+  if (endTime == 0) {
+    return;
+  }
+  temperatureNode.setProperty(NODE_TEMPERATUR).send(String(bme.readTemperature()));
+  pressureNode.setProperty(NODE_PRESSURE).send(String(bme.readPressure() / 100.0F));
+  altitudeNode.setProperty(NODE_ALTITUDE).send(String(bme.readAltitude(SEALEVELPRESSURE_HPA)));
+  gasNode.setProperty(NODE_GAS).send(String((bme.gas_resistance / 1000.0)));
+  
+  humidityNode.setProperty(NODE_HUMIDITY).send(String(bme.humidity));
+
   if (rgbTemp.get()) {
-      if (bmp.readTemperature() < TEMPBORDER) {
+      if (bme.readTemperature() < TEMPBORDER) {
         strip.setPixelColor(0, strip.Color(0,0,255));
       } else {
         strip.setPixelColor(0, strip.Color(255,0,0));
@@ -262,6 +276,12 @@ void setup()
   altitudeNode.advertise(NODE_ALTITUDE).setName("Altitude")
                                       .setDatatype("float")
                                       .setUnit("m");
+  gasNode.advertise(NODE_GAS).setName("Gas")
+                              .setDatatype("float")
+                              .setUnit(" KOhms");
+  humidityNode.advertise(NODE_HUMIDITY).setName("Humidity")
+                              .setDatatype("float")
+                              .setUnit("%");
 
 
   strip.begin();
@@ -276,18 +296,17 @@ void setup()
       strip.fill(strip.Color(0,128,0));
       strip.show();
       /* Extracted from library's example */
-      if (!bmp.begin()) {
-        Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
+      if (!bme.begin()) {
+        Serial.println(F("Could not find a valid BME680 sensor, check wiring or "
                           "try a different address!"));
         while (1) delay(10);
       }
 
-      /* Default settings from datasheet. */
-      bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
-                      Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
-                      Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
-                      Adafruit_BMP280::FILTER_X16,      /* Filtering. */
-                      Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
+      bme.setTemperatureOversampling(BME680_OS_8X);
+      bme.setHumidityOversampling(BME680_OS_2X);
+      bme.setPressureOversampling(BME680_OS_4X);
+      bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
+      bme.setGasHeater(320, 150); // 320*C for 150 ms
     }
     strip.fill(strip.Color(0,0,0));
     for (int i=0;i < (PIXEL_COUNT / 2); i++) {
