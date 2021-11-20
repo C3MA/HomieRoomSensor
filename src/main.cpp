@@ -301,6 +301,7 @@ void setup()
                           "try a different address!"));
         while (1) delay(10);
       }
+      //FIXME add here a timeout, if the sensor cannot be found on I2C
 
       bme.setTemperatureOversampling(BME680_OS_8X);
       bme.setHumidityOversampling(BME680_OS_2X);
