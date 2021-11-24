@@ -43,10 +43,13 @@
 #define SEALEVELPRESSURE_HPA (1013.25)
 
 #define LOG_TOPIC "log\0"
-#define MQTT_LOG_ERROR    1
-#define MQTT_LOG_WARNING  10
-#define MQTT_LOG_INFO     20
-#define MQTT_LOG_DEBUG    90
+#define MQTT_LEVEL_ERROR    1
+#define MQTT_LEVEL_WARNING  10
+#define MQTT_LEVEL_INFO     20
+#define MQTT_LEVEL_DEBUG    90
+
+#define MQTT_LOG_PM1006     10
+#define MQTT_LOG_I2CINIT    100
 
 #define TEMPBORDER        20
 
@@ -81,6 +84,7 @@ void log(int level, String message, int code);
 
 bool mConfigured = false;
 bool mConnected = false;
+bool mFailedI2Cinitialization = false;
 
 HomieNode particle(NODE_PARTICE, "particle", "Particle"); /**< Measuret in micro gram per quibik meter air volume */
 HomieNode temperatureNode(NODE_TEMPERATUR, "Room Temperature", "Room Temperature");
@@ -137,7 +141,7 @@ int getSensorData() {
     dbgBuffer += String(serialRxBuf[i], 16);
   }
   dbgBuffer += String("check: " + String(checksum, 16));
-  log(MQTT_LOG_DEBUG, String(dbgBuffer), 1);
+  log(MQTT_LEVEL_DEBUG, String(dbgBuffer), MQTT_LOG_PM1006);
 
   // Header und Prüfsumme checken
   if (serialRxBuf[0] == 0x16 && serialRxBuf[1] == 0x11 && serialRxBuf[2] == 0x0B /* && checksum == 0 */)
@@ -167,6 +171,10 @@ void onHomieEvent(const HomieEvent &event)
     digitalWrite(WITTY_RGB_B, LOW);
     strip.fill(strip.Color(0,0,128));
     strip.show();
+    if (mFailedI2Cinitialization) {
+      log(MQTT_LEVEL_DEBUG, F("Could not find a valid BME680 sensor, check wiring or "
+                          "try a different address!"), MQTT_LOG_I2CINIT);
+    }
     break;
   case HomieEventType::READY_TO_SLEEP:
     break;
@@ -296,12 +304,7 @@ void setup()
       strip.fill(strip.Color(0,128,0));
       strip.show();
       /* Extracted from library's example */
-      if (!bme.begin()) {
-        Serial.println(F("Could not find a valid BME680 sensor, check wiring or "
-                          "try a different address!"));
-        while (1) delay(10);
-      }
-      //FIXME add here a timeout, if the sensor cannot be found on I2C
+      mFailedI2Cinitialization = !bme.begin();
 
       bme.setTemperatureOversampling(BME680_OS_8X);
       bme.setHumidityOversampling(BME680_OS_2X);
