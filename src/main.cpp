@@ -50,6 +50,7 @@
 
 #define MQTT_LOG_PM1006     10
 #define MQTT_LOG_I2CINIT    100
+#define MQTT_LOG_I2READ     101
 
 #define TEMPBORDER        20
 
@@ -67,7 +68,7 @@
 #define NODE_ALTITUDE                   "altitude"
 #define NODE_GAS                        "gas"
 #define NODE_HUMIDITY                   "humidity"
-
+#define NODE_AMBIENT                    "ambient"
 /******************************************************************************
  *                                     TYPE DEFS
  ******************************************************************************/
@@ -86,6 +87,7 @@ bool mConfigured = false;
 bool mConnected = false;
 bool mFailedI2Cinitialization = false;
 
+/******************************* Sensor data **************************/
 HomieNode particle(NODE_PARTICE, "particle", "Particle"); /**< Measuret in micro gram per quibik meter air volume */
 HomieNode temperatureNode(NODE_TEMPERATUR, "Room Temperature", "Room Temperature");
 HomieNode pressureNode(NODE_PRESSURE, "Pressure", "Room Pressure");
@@ -93,6 +95,10 @@ HomieNode altitudeNode(NODE_ALTITUDE, "Altitude", "Room altitude");
 HomieNode gasNode(NODE_GAS, "Gas", "Room gas");
 HomieNode humidityNode(NODE_HUMIDITY, "Humidity", "Room humidity");
 
+/****************************** Output control ***********************/
+HomieNode ledStripNode /* to rule them all */("led", "RGB led", "all leds");
+
+/************************** Settings ******************************/
 HomieSetting<bool> i2cEnable("i2c", "BME280 sensor present");
 HomieSetting<bool> rgbTemp("rgbTemp", "Show temperatur via red (>20 °C) and blue (< 20°C)");
 
@@ -107,6 +113,7 @@ uint8_t rxBufIdx = 0;
 int spm25 = 0;
 int last = 0;
 unsigned int mButtonPressed = 0;
+bool mSomethingReceived = false;
 
 /******************************************************************************
  *                            LOCAL FUNCTIONS
@@ -174,6 +181,8 @@ void onHomieEvent(const HomieEvent &event)
     if (mFailedI2Cinitialization) {
       log(MQTT_LEVEL_DEBUG, F("Could not find a valid BME680 sensor, check wiring or "
                           "try a different address!"), MQTT_LOG_I2CINIT);
+    } else {
+      log(MQTT_LEVEL_INFO, F("BME680 sensor found"), MQTT_LOG_I2CINIT);
     }
     break;
   case HomieEventType::READY_TO_SLEEP:
@@ -192,6 +201,7 @@ void bmpPublishValues() {
   // Tell BME680 to begin measurement.
   unsigned long endTime = bme.beginReading();
   if (endTime == 0) {
+    log(MQTT_LEVEL_ERROR, F("BME680 not accessable"), MQTT_LOG_I2READ);
     return;
   }
   temperatureNode.setProperty(NODE_TEMPERATUR).send(String(bme.readTemperature()));
@@ -201,7 +211,7 @@ void bmpPublishValues() {
   
   humidityNode.setProperty(NODE_HUMIDITY).send(String(bme.humidity));
 
-  if (rgbTemp.get()) {
+  if ( (rgbTemp.get()) && (!mSomethingReceived) ) {
       if (bme.readTemperature() < TEMPBORDER) {
         strip.setPixelColor(0, strip.Color(0,0,255));
       } else {
@@ -229,24 +239,50 @@ void loopHandler()
     int pM25 = getSensorData();
     if (pM25 >= 0) {
       particle.setProperty("particle").send(String(pM25));
-      if (pM25 < 35) {
-        strip.fill(strip.Color(0, 255, 0)); /* green */
-      } else if (pM25 < 85) {
-        strip.fill(strip.Color(255, 127, 0)); /* orange */
-      } else {
-        strip.fill(strip.Color(255, 0, 0)); /* red */
+      if (!mSomethingReceived) {
+        if (pM25 < 35) {
+          strip.fill(strip.Color(0, 255, 0)); /* green */
+        } else if (pM25 < 85) {
+          strip.fill(strip.Color(255, 127, 0)); /* orange */
+        } else {
+          strip.fill(strip.Color(255, 0, 0)); /* red */
+        }
+        strip.show();
       }
     }
-    strip.show();
 
     /* Read BOSCH sensor */
-    bmpPublishValues();
+    if (i2cEnable.get() && (!mFailedI2Cinitialization)) {
+      bmpPublishValues();
+    }
   
     lastRead = millis();
   }
   // Feed the dog -> ESP stay alive
   ESP.wdtFeed();
 }
+
+
+
+bool ledHandler(const HomieRange& range, const String& value) {
+  if (range.isRange) return false;  // only one switch is present
+
+  mSomethingReceived = true; // Stop animation
+
+  int sep1 = value.indexOf(',');
+  int sep2 = value.indexOf(',', sep1 + 1);
+  int hue = value.substring(0,sep1).toInt(); /* OpenHAB  hue (0-360°) */
+  int satu = value.substring(sep1 + 1, sep2).toInt(); /* OpenHAB saturation (0-100%) */
+  int bright = value.substring(sep2 + 1, value.length()).toInt(); /* brightness (0-100%) */
+  
+  uint8_t c = strip.ColorHSV(65535 * hue / 360, 255 * satu / 100, 255 * bright / 100);
+  strip.clear();  // Initialize all pixels to 'off'
+  strip.fill(c);
+  strip.show();
+  return true;
+}
+
+
 
 /******************************************************************************
  *                            GLOBAL FUNCTIONS
@@ -290,6 +326,9 @@ void setup()
   humidityNode.advertise(NODE_HUMIDITY).setName("Humidity")
                               .setDatatype("float")
                               .setUnit("%");
+  ledStripNode.advertise(NODE_AMBIENT).setName("All Leds")
+                            .setDatatype("color").setUnit("hsb")
+                            .settable(ledHandler);
 
 
   strip.begin();
@@ -305,12 +344,15 @@ void setup()
       strip.show();
       /* Extracted from library's example */
       mFailedI2Cinitialization = !bme.begin();
-
-      bme.setTemperatureOversampling(BME680_OS_8X);
-      bme.setHumidityOversampling(BME680_OS_2X);
-      bme.setPressureOversampling(BME680_OS_4X);
-      bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
-      bme.setGasHeater(320, 150); // 320*C for 150 ms
+      if (!mFailedI2Cinitialization) {
+        bme.setTemperatureOversampling(BME680_OS_8X);
+        bme.setHumidityOversampling(BME680_OS_2X);
+        bme.setPressureOversampling(BME680_OS_4X);
+        bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
+        bme.setGasHeater(320, 150); // 320*C for 150 ms
+      } else {
+        printf("Faild to initialize I2C bus\r\n");
+      }
     }
     strip.fill(strip.Color(0,0,0));
     for (int i=0;i < (PIXEL_COUNT / 2); i++) {

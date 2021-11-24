@@ -13,6 +13,6 @@
 #define HOMIE_SETTINGS
 
 #define HOMIE_FIRMWARE_NAME     "Vindriktning"
-#define HOMIE_FIRMWARE_VERSION  "1.1.0"
+#define HOMIE_FIRMWARE_VERSION  "1.2.0"
 
 #endif
