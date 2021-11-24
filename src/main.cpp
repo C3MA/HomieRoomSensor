@@ -51,6 +51,7 @@
 #define MQTT_LOG_PM1006     10
 #define MQTT_LOG_I2CINIT    100
 #define MQTT_LOG_I2READ     101
+#define MQTT_LOG_RGB        200
 
 #define TEMPBORDER        20
 
@@ -96,7 +97,7 @@ HomieNode gasNode(NODE_GAS, "Gas", "Room gas");
 HomieNode humidityNode(NODE_HUMIDITY, "Humidity", "Room humidity");
 
 /****************************** Output control ***********************/
-HomieNode ledStripNode /* to rule them all */("led", "RGB led", "all leds");
+HomieNode ledStripNode /* to rule them all */("led", "RGB led", "color");
 
 /************************** Settings ******************************/
 HomieSetting<bool> i2cEnable("i2c", "BME280 sensor present");
@@ -271,15 +272,19 @@ bool ledHandler(const HomieRange& range, const String& value) {
 
   int sep1 = value.indexOf(',');
   int sep2 = value.indexOf(',', sep1 + 1);
-  int hue = value.substring(0,sep1).toInt(); /* OpenHAB  hue (0-360°) */
-  int satu = value.substring(sep1 + 1, sep2).toInt(); /* OpenHAB saturation (0-100%) */
-  int bright = value.substring(sep2 + 1, value.length()).toInt(); /* brightness (0-100%) */
-  
-  uint8_t c = strip.ColorHSV(65535 * hue / 360, 255 * satu / 100, 255 * bright / 100);
-  strip.clear();  // Initialize all pixels to 'off'
-  strip.fill(c);
-  strip.show();
-  return true;
+  if ((sep1 > 0) && (sep2 > 0)) {
+    int hue = value.substring(0,sep1).toInt(); /* OpenHAB  hue (0-360°) */
+    int satu = value.substring(sep1 + 1, sep2).toInt(); /* OpenHAB saturation (0-100%) */
+    int bright = value.substring(sep2 + 1, value.length()).toInt(); /* brightness (0-100%) */
+
+    uint16_t convertedHue = hue * (65535UL / 360) ;
+    uint8_t c = strip.ColorHSV(convertedHue,  satu * (255 / 100), bright * (255 / 100));
+    strip.fill(c);
+    strip.show();
+    //FIXME ledStripNode.setProperty(NODE_AMBIENT).send(String(hue) + "," + String(satu) + "," + String(bright));
+    return true;
+  }
+  return false;
 }
 
 
@@ -327,7 +332,7 @@ void setup()
                               .setDatatype("float")
                               .setUnit("%");
   ledStripNode.advertise(NODE_AMBIENT).setName("All Leds")
-                            .setDatatype("color").setUnit("hsb")
+                            .setDatatype("color").setFormat("hsv")
                             .settable(ledHandler);
 
 
