@@ -63,7 +63,7 @@
   strcat(topic, test);         
 
 #define NUMBER_TYPE                     "Number"
-#define NODE_PARTICE                    "particle"
+#define NODE_PARTICLE                   "particle"
 #define NODE_TEMPERATUR                 "temp"
 #define NODE_PRESSURE                   "pressure"
 #define NODE_ALTITUDE                   "altitude"
@@ -89,12 +89,12 @@ bool mConnected = false;
 bool mFailedI2Cinitialization = false;
 
 /******************************* Sensor data **************************/
-HomieNode particle(NODE_PARTICE, "particle", "Particle"); /**< Measuret in micro gram per quibik meter air volume */
-HomieNode temperatureNode(NODE_TEMPERATUR, "Room Temperature", "Room Temperature");
-HomieNode pressureNode(NODE_PRESSURE, "Pressure", "Room Pressure");
-HomieNode altitudeNode(NODE_ALTITUDE, "Altitude", "Room altitude");
-HomieNode gasNode(NODE_GAS, "Gas", "Room gas");
-HomieNode humidityNode(NODE_HUMIDITY, "Humidity", "Room humidity");
+HomieNode particle(NODE_PARTICLE, "particle", "number"); /**< Measuret in micro gram per quibik meter air volume */
+HomieNode temperatureNode(NODE_TEMPERATUR, "Room Temperature", "number");
+HomieNode pressureNode(NODE_PRESSURE, "Pressure", "number");
+HomieNode altitudeNode(NODE_ALTITUDE, "Altitude", "number");
+HomieNode gasNode(NODE_GAS, "Gas", "number");
+HomieNode humidityNode(NODE_HUMIDITY, "Humidity", "number");
 
 /****************************** Output control ***********************/
 HomieNode ledStripNode /* to rule them all */("led", "RGB led", "color");
@@ -239,7 +239,7 @@ void loopHandler()
   if ((millis() - lastRead) > PM1006_MQTT_UPDATE) {
     int pM25 = getSensorData();
     if (pM25 >= 0) {
-      particle.setProperty("particle").send(String(pM25));
+      particle.setProperty(NODE_PARTICLE).send(String(pM25));
       if (!mSomethingReceived) {
         if (pM25 < 35) {
           strip.fill(strip.Color(0, 255, 0)); /* green */
@@ -273,15 +273,17 @@ bool ledHandler(const HomieRange& range, const String& value) {
   int sep1 = value.indexOf(',');
   int sep2 = value.indexOf(',', sep1 + 1);
   if ((sep1 > 0) && (sep2 > 0)) {
-    int hue = value.substring(0,sep1).toInt(); /* OpenHAB  hue (0-360°) */
-    int satu = value.substring(sep1 + 1, sep2).toInt(); /* OpenHAB saturation (0-100%) */
-    int bright = value.substring(sep2 + 1, value.length()).toInt(); /* brightness (0-100%) */
+    int red = value.substring(0,sep1).toInt(); /* OpenHAB  hue (0-360°) */
+    int green = value.substring(sep1 + 1, sep2).toInt(); /* OpenHAB saturation (0-100%) */
+    int blue = value.substring(sep2 + 1, value.length()).toInt(); /* brightness (0-100%) */
 
-    uint16_t convertedHue = hue * (65535UL / 360) ;
-    uint8_t c = strip.ColorHSV(convertedHue,  satu * (255 / 100), bright * (255 / 100));
+    uint8_t r = (red * 255) / 250;
+    uint8_t g = (green *255) / 250;
+    uint8_t b = (blue *255) / 250;
+    uint32_t c = strip.Color(r,g,b);
     strip.fill(c);
     strip.show();
-    //FIXME ledStripNode.setProperty(NODE_AMBIENT).send(String(hue) + "," + String(satu) + "," + String(bright));
+    ledStripNode.setProperty(NODE_AMBIENT).send(String(r) + "," + String(g) + "," + String(b));
     return true;
   }
   return false;
@@ -315,7 +317,7 @@ void setup()
   pmSerial.begin(PM1006_BIT_RATE);
   Homie.setup();
   
-  particle.advertise("particle").setName("Particle").setDatatype(NUMBER_TYPE).setUnit("micro gram per quibik");
+  particle.advertise(NODE_PARTICLE).setName("Particle").setDatatype(NUMBER_TYPE).setUnit("micro gram per quibik");
   temperatureNode.advertise(NODE_TEMPERATUR).setName("Degrees")
                                       .setDatatype("float")
                                       .setUnit("ºC");
@@ -332,7 +334,7 @@ void setup()
                               .setDatatype("float")
                               .setUnit("%");
   ledStripNode.advertise(NODE_AMBIENT).setName("All Leds")
-                            .setDatatype("color").setFormat("hsv")
+                            .setDatatype("color").setFormat("rgb")
                             .settable(ledHandler);
 
 
