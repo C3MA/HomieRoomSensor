@@ -98,7 +98,7 @@ bool mFailedI2Cinitialization = false;
 
 /******************************* Sensor data **************************/
 HomieNode particle(NODE_PARTICLE, "particle", "number"); /**< Measuret in micro gram per quibik meter air volume */
-HomieNode temperatureNode(NODE_TEMPERATUR, "Room Temperature", "number");
+HomieNode temperaturNode(NODE_TEMPERATUR, "Room Temperature", "number");
 HomieNode pressureNode(NODE_PRESSURE, "Pressure", "number");
 HomieNode altitudeNode(NODE_ALTITUDE, "Altitude", "number");
 #ifdef BME680
@@ -122,7 +122,7 @@ HomieSetting<bool> i2cEnable("i2c",
 #endif
 
 );
-HomieSetting<bool> rgbTemp("rgbTemp", "Show temperatur via red (>20 °C) and blue (< 20°C)");
+HomieSetting<bool> rgbTemp("rgbTemp", "Show temperature via red (>20 °C) and blue (< 20°C)");
 
 static SoftwareSerial pmSerial(SENSOR_PM1006_RX, SENSOR_PM1006_TX);
 #ifdef BME680
@@ -230,12 +230,12 @@ void bmpPublishValues() {
   // Tell BME680 to begin measurement.
   unsigned long endTime = bmx.beginReading();
   if (endTime == 0) {
-    log(MQTT_LEVEL_ERROR, F("BME680 not accessable"), MQTT_LOG_I2READ);
+    log(MQTT_LEVEL_ERROR, F("BME680 not accessible"), MQTT_LOG_I2READ);
     return;
   }
 #endif
   //  Publish the values
-  temperatureNode.setProperty(NODE_TEMPERATUR).send(String(bmx.readTemperature()));
+  temperaturNode.setProperty(NODE_TEMPERATUR).send(String(bmx.readTemperature()));
   pressureNode.setProperty(NODE_PRESSURE).send(String(bmx.readPressure() / 100.0F));
   altitudeNode.setProperty(NODE_ALTITUDE).send(String(bmx.readAltitude(SEALEVELPRESSURE_HPA)));
 #ifdef BME680
@@ -349,7 +349,7 @@ void setup()
   Homie.setup();
   
   particle.advertise(NODE_PARTICLE).setName("Particle").setDatatype(NUMBER_TYPE).setUnit("micro gram per quibik");
-  temperatureNode.advertise(NODE_TEMPERATUR).setName("Degrees")
+  temperaturNode.advertise(NODE_TEMPERATUR).setName("Degrees")
                                       .setDatatype("float")
                                       .setUnit("ºC");
   pressureNode.advertise(NODE_PRESSURE).setName("Pressure")
@@ -401,7 +401,7 @@ void setup()
                       Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
 #endif
       } else {
-        printf("Faild to initialize I2C bus\r\n");
+        printf("Failed to initialize I2C bus\r\n");
       }
     }
     strip.fill(strip.Color(0,0,0));
