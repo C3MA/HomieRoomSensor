@@ -78,6 +78,8 @@
 #define NODE_GAS                        "gas"
 #define NODE_HUMIDITY                   "humidity"
 #define NODE_AMBIENT                    "ambient"
+
+#define MQTT_DUMMYHOST                  "localhost"
 /******************************************************************************
  *                                     TYPE DEFS
  ******************************************************************************/
@@ -95,6 +97,7 @@ void log(int level, String message, int code);
 bool mConfigured = false;
 bool mConnected = false;
 bool mFailedI2Cinitialization = false;
+AsyncWebServer* mHttp;
 
 /******************************* Sensor data **************************/
 HomieNode particle(NODE_PARTICLE, "particle", "number"); /**< Measuret in micro gram per quibik meter air volume */
@@ -142,6 +145,7 @@ int spm25 = 0;
 int last = 0;
 unsigned int mButtonPressed = 0;
 bool mSomethingReceived = false;
+bool mConnectedNonMQTT = false;
 
 /******************************************************************************
  *                            LOCAL FUNCTIONS
@@ -197,8 +201,7 @@ void onHomieEvent(const HomieEvent &event)
 {
   switch (event.type)
   {
-  case HomieEventType::MQTT_READY:
-    mConnected=true;
+  case HomieEventType::WIFI_CONNECTED:
     digitalWrite(WITTY_RGB_R, LOW);
     if (!i2cEnable.get()) { /** keep green LED activated to power I2C sensor */
       digitalWrite(WITTY_RGB_G, LOW);
@@ -206,6 +209,13 @@ void onHomieEvent(const HomieEvent &event)
     digitalWrite(WITTY_RGB_B, LOW);
     strip.fill(strip.Color(0,0,128));
     strip.show();
+    if (String(Homie.getConfiguration().mqtt.server.host).equals(MQTT_DUMMYHOST)) {
+      strip.fill(strip.Color(0,64,0));
+      mConnectedNonMQTT = true;
+    }
+    break;
+  case HomieEventType::MQTT_READY:
+    mConnected=true;
     if (mFailedI2Cinitialization) {
       log(MQTT_LEVEL_DEBUG, F("Could not find a valid BME680 sensor, check wiring or "
                           "try a different address!"), MQTT_LOG_I2CINIT);
@@ -327,8 +337,6 @@ bool ledHandler(const HomieRange& range, const String& value) {
   return false;
 }
 
-
-
 /******************************************************************************
  *                            GLOBAL FUNCTIONS
  *****************************************************************************/
@@ -348,7 +356,7 @@ void setup()
   Homie_setFirmware(HOMIE_FIRMWARE_NAME, HOMIE_FIRMWARE_VERSION);
   Homie.setLoopFunction(loopHandler);
   Homie.onEvent(onHomieEvent);
-  i2cEnable.setDefaultValue(false);
+  i2cEnable.setDefaultValue(true);
   rgbTemp.setDefaultValue(false);
   memset(serialRxBuf, 0, 80);
 
@@ -412,10 +420,25 @@ void setup()
       }
     }
     strip.fill(strip.Color(0,0,0));
-    for (int i=0;i < (PIXEL_COUNT / 2); i++) {
-      strip.setPixelColor(0, strip.Color(0,0,128));
+    String mqttHost = String(Homie.getConfiguration().mqtt.server.host);
+    if (mqttHost.equals(MQTT_DUMMYHOST)) {
+      Homie.getLogger() << "Server without MQTT" << endl;
+      for (int i=0;i < (PIXEL_COUNT / 2); i++) {
+        strip.setPixelColor(0, strip.Color(0,128,0));
+      }
+    } else {
+      for (int i=0;i < (PIXEL_COUNT / 2); i++) {
+        strip.setPixelColor(0, strip.Color(0,0,128));
+      }
     }
     strip.show();
+    mHttp = new AsyncWebServer(80);
+    mHttp->on("/heap", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send(200, "text/plain", String(ESP.getFreeHeap()));
+    });
+    mHttp->serveStatic("/", SPIFFS, "/").setDefaultFile("index.htm");
+    mHttp->begin();
+    Homie.getLogger() << "Webserver started" << endl;
     digitalWrite(WITTY_RGB_B, HIGH);
   } else {
     strip.fill(strip.Color(128,0,0));
@@ -428,7 +451,11 @@ void setup()
 
 void loop()
 {
-  Homie.loop();
+  if (!mConnectedNonMQTT) {
+    Homie.loop();
+  } else {
+    /*FIXME handle here a webserver */
+  }
   /* use the pin, receiving the soft serial additionally as button */
   if (digitalRead(GPIO_BUTTON) == LOW) {
     mButtonPressed++;
@@ -464,4 +491,5 @@ void log(int level, String message, int statusCode)
     Homie.getMqttClient().publish(logTopic, 2, false, buffer.c_str());
     delete logTopic;
   }
+  Homie.getLogger() << (level) << "@" << (statusCode) << " " << (message) << endl;
 }
