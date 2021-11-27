@@ -3,8 +3,56 @@
   <head>
     <meta http-equiv="Content-type" content="text/html; charset=utf-8">
     <title>IKEA Home Sensor</title>
+    <script type="text/javascript">
+      function onBodyLoad(){
+        const xhttp = new XMLHttpRequest();
+        xhttp.onload = function() {
+          document.getElementById("debug").innerHTML = this.responseText;
+          }
+        xhttp.open("GET", "/sensors", true);
+        xhttp.send();
+      }
+    </script>
   </head>
-  <body id="body">
+  <body id="body" onload="onBodyLoad()">
     <h1>Room Sensor</h1>
+    <table>
+      <th>
+        <td>Sensor</td>
+        <td>Value</td>
+        <td></td>
+      </th>
+      <tr>
+        <td>Temperatur</td>
+        <td id="temp">temp</td>
+        <td>°C</td>
+      </tr>
+      <tr id="rowHumidity">
+        <td>Humidity</td>
+        <td id="humidity">humidity</td>
+        <td>%</td>
+      </tr>
+      <tr id="rowGas">
+        <td>Gas</td>
+        <td id="gas">gas</td>
+        <td> KOhms</td>
+      </tr>
+      <tr>
+        <td>Altitude</td>
+        <td id="altitude">altitude</td>
+        <td>m</td>
+      </tr>
+      <tr>
+        <td>Pressure</td>
+        <td id="pressure">pressure</td>
+        <td>hPa</td>
+      </tr>
+      <tr>
+        <td>Particle</td>
+        <td id="particle">particle</td>
+        <td>micro gram per quibik</td>
+      </tr>
+    </table>
+    <p id="debug">Nothing</p>
   </body>
 </html>

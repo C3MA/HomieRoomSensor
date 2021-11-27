@@ -141,7 +141,7 @@ Adafruit_NeoPixel strip(PIXEL_COUNT, GPIO_WS2812, NEO_GRB + NEO_KHZ800);
 // Variablen
 uint8_t serialRxBuf[80];
 uint8_t rxBufIdx = 0;
-int spm25 = 0;
+int mParticle_pM25 = 0;
 int last = 0;
 unsigned int mButtonPressed = 0;
 bool mSomethingReceived = false;
@@ -235,15 +235,28 @@ void onHomieEvent(const HomieEvent &event)
   }
 }
 
-void bmpPublishValues() {
+void updateLEDs() {
 #ifdef BME680
   // Tell BME680 to begin measurement.
   unsigned long endTime = bmx.beginReading();
   if (endTime == 0) {
-    log(MQTT_LEVEL_ERROR, F("BME680 not accessible"), MQTT_LOG_I2READ);
+    log(MQTT_LEVEL_ERROR, "BME680 not accessible", MQTT_LOG_I2READ);
     return;
   }
 #endif
+  if ( (rgbTemp.get()) && (!mSomethingReceived) ) {
+      if (bmx.readTemperature() < TEMPBORDER) {
+        strip.setPixelColor(0, strip.Color(0,0,255));
+      } else {
+        strip.setPixelColor(0, strip.Color(255,0,0));
+      }
+      strip.show();
+  } else {
+    bmx.performReading();
+  }
+}
+
+void bmpPublishValues() {
   //  Publish the values
   temperaturNode.setProperty(NODE_TEMPERATUR).send(String(bmx.readTemperature()));
   pressureNode.setProperty(NODE_PRESSURE).send(String(bmx.readPressure() / 100.0F));
@@ -252,15 +265,29 @@ void bmpPublishValues() {
   gasNode.setProperty(NODE_GAS).send(String((bmx.gas_resistance / 1000.0)));
   humidityNode.setProperty(NODE_HUMIDITY).send(String(bmx.humidity));
 #endif
+}
 
-  if ( (rgbTemp.get()) && (!mSomethingReceived) ) {
-      if (bmx.readTemperature() < TEMPBORDER) {
-        strip.setPixelColor(0, strip.Color(0,0,255));
-      } else {
-        strip.setPixelColor(0, strip.Color(255,0,0));
-      }
-      strip.show();
-  }
+/**
+ * @brief Generate JSON with last measured values
+ * For the update intervall, please check @see PM1006_MQTT_UPDATE
+ * @return String with JSON
+ */
+String sensorAsJSON(void) {
+  String buffer;
+  StaticJsonDocument<500> doc;
+
+  doc["temp"] = String(bmx.temperature);
+#ifdef BME680
+   doc["gas"] = String((bmx.gas_resistance / 1000.0));
+  doc["humidity"] = String(bmx.humidity);
+#endif
+  float atmospheric = bmx.pressure / 100.0F;
+  float altitude = 44330.0 * (1.0 - pow(atmospheric / SEALEVELPRESSURE_HPA, 0.1903));
+  doc["altitude"] = String(altitude);
+  doc["pressure"] = String(bmx.pressure / 100.0F);
+  doc["particle"] = String(mParticle_pM25);
+  serializeJson(doc, buffer);
+  return buffer;
 }
 
 /**
@@ -278,13 +305,15 @@ void loopHandler()
 {
   static long lastRead = 0;
   if ((millis() - lastRead) > PM1006_MQTT_UPDATE) {
-    int pM25 = getSensorData();
-    if (pM25 >= 0) {
-      particle.setProperty(NODE_PARTICLE).send(String(pM25));
+    mParticle_pM25 = getSensorData();
+    if (mParticle_pM25 >= 0) {
+      if (!mConnectedNonMQTT) {
+        particle.setProperty(NODE_PARTICLE).send(String(mParticle_pM25));
+      }
       if (!mSomethingReceived) {
-        if (pM25 < 35) {
+        if (mParticle_pM25 < 35) {
           strip.fill(strip.Color(0, 255, 0)); /* green */
-        } else if (pM25 < 85) {
+        } else if (mParticle_pM25 < 85) {
           strip.fill(strip.Color(255, 127, 0)); /* orange */
         } else {
           strip.fill(strip.Color(255, 0, 0)); /* red */
@@ -295,7 +324,10 @@ void loopHandler()
 
     /* Read BOSCH sensor */
     if (i2cEnable.get() && (!mFailedI2Cinitialization)) {
-      bmpPublishValues();
+      updateLEDs();
+      if (!mConnectedNonMQTT) {
+        bmpPublishValues();
+      }
     }
   
     lastRead = millis();
@@ -415,6 +447,7 @@ void setup()
                       Adafruit_BMP280::FILTER_X16,      /* Filtering. */
                       Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
 #endif
+        printf("Sensor found on I2C bus\r\n");
       } else {
         printf("Failed to initialize I2C bus\r\n");
       }
@@ -436,6 +469,9 @@ void setup()
     mHttp->on("/heap", HTTP_GET, [](AsyncWebServerRequest *request){
       request->send(200, "text/plain", String(ESP.getFreeHeap()));
     });
+    mHttp->on("/sensors", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send(200, "text/plain", sensorAsJSON());
+    });
     mHttp->serveStatic("/", SPIFFS, "/").setDefaultFile("index.htm");
     mHttp->begin();
     Homie.getLogger() << "Webserver started" << endl;
@@ -454,7 +490,8 @@ void loop()
   if (!mConnectedNonMQTT) {
     Homie.loop();
   } else {
-    /*FIXME handle here a webserver */
+    /* call the custom loop direclty, as Homie is deactivated */
+    loopHandler();
   }
   /* use the pin, receiving the soft serial additionally as button */
   if (digitalRead(GPIO_BUTTON) == LOW) {
