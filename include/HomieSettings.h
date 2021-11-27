@@ -12,7 +12,7 @@
 #ifndef HOMIE_SETTINGS
 #define HOMIE_SETTINGS
 
-#define HOMIE_FIRMWARE_NAME     "Vindriktning"
-#define HOMIE_FIRMWARE_VERSION  "1.2.1"
+#define HOMIE_FIRMWARE_NAME     "RoomSensor"
+#define HOMIE_FIRMWARE_VERSION  "2.0.0"
 
 #endif

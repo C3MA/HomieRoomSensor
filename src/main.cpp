@@ -18,7 +18,15 @@
 #include <Adafruit_NeoPixel.h>
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
+#ifdef BME680
 #include "Adafruit_BME680.h"
+#else 
+#ifdef BMP280
+#include "Adafruit_BMP280.h"
+#else
+#error "Decition, which BMx??? is used missing"
+#endif
+#endif
 
 /******************************************************************************
  *                                     DEFINES
@@ -93,18 +101,37 @@ HomieNode particle(NODE_PARTICLE, "particle", "number"); /**< Measuret in micro 
 HomieNode temperatureNode(NODE_TEMPERATUR, "Room Temperature", "number");
 HomieNode pressureNode(NODE_PRESSURE, "Pressure", "number");
 HomieNode altitudeNode(NODE_ALTITUDE, "Altitude", "number");
+#ifdef BME680
 HomieNode gasNode(NODE_GAS, "Gas", "number");
 HomieNode humidityNode(NODE_HUMIDITY, "Humidity", "number");
+#endif
 
 /****************************** Output control ***********************/
 HomieNode ledStripNode /* to rule them all */("led", "RGB led", "color");
 
 /************************** Settings ******************************/
-HomieSetting<bool> i2cEnable("i2c", "BME280 sensor present");
+HomieSetting<bool> i2cEnable("i2c", 
+#ifdef BME680
+"BME680 sensor present"
+#else
+#ifdef BMP280
+"BMP280 sensor present"
+#else
+"No I2C sensor specified in the project"
+#endif
+#endif
+
+);
 HomieSetting<bool> rgbTemp("rgbTemp", "Show temperatur via red (>20 °C) and blue (< 20°C)");
 
 static SoftwareSerial pmSerial(SENSOR_PM1006_RX, SENSOR_PM1006_TX);
-Adafruit_BME680 bme(&Wire); // connected via I2C
+#ifdef BME680
+Adafruit_BME680 bmx(&Wire); // connected via I2C
+#else
+#ifdef BMP280
+Adafruit_BMP280 bmx; // connected via I2C
+#endif
+#endif
 
 Adafruit_NeoPixel strip(PIXEL_COUNT, GPIO_WS2812, NEO_GRB + NEO_KHZ800);
 
@@ -199,21 +226,25 @@ void onHomieEvent(const HomieEvent &event)
 }
 
 void bmpPublishValues() {
+#ifdef BME680
   // Tell BME680 to begin measurement.
-  unsigned long endTime = bme.beginReading();
+  unsigned long endTime = bmx.beginReading();
   if (endTime == 0) {
     log(MQTT_LEVEL_ERROR, F("BME680 not accessable"), MQTT_LOG_I2READ);
     return;
   }
-  temperatureNode.setProperty(NODE_TEMPERATUR).send(String(bme.readTemperature()));
-  pressureNode.setProperty(NODE_PRESSURE).send(String(bme.readPressure() / 100.0F));
-  altitudeNode.setProperty(NODE_ALTITUDE).send(String(bme.readAltitude(SEALEVELPRESSURE_HPA)));
-  gasNode.setProperty(NODE_GAS).send(String((bme.gas_resistance / 1000.0)));
-  
-  humidityNode.setProperty(NODE_HUMIDITY).send(String(bme.humidity));
+#endif
+  //  Publish the values
+  temperatureNode.setProperty(NODE_TEMPERATUR).send(String(bmx.readTemperature()));
+  pressureNode.setProperty(NODE_PRESSURE).send(String(bmx.readPressure() / 100.0F));
+  altitudeNode.setProperty(NODE_ALTITUDE).send(String(bmx.readAltitude(SEALEVELPRESSURE_HPA)));
+#ifdef BME680
+  gasNode.setProperty(NODE_GAS).send(String((bmx.gas_resistance / 1000.0)));
+  humidityNode.setProperty(NODE_HUMIDITY).send(String(bmx.humidity));
+#endif
 
   if ( (rgbTemp.get()) && (!mSomethingReceived) ) {
-      if (bme.readTemperature() < TEMPBORDER) {
+      if (bmx.readTemperature() < TEMPBORDER) {
         strip.setPixelColor(0, strip.Color(0,0,255));
       } else {
         strip.setPixelColor(0, strip.Color(255,0,0));
@@ -327,12 +358,14 @@ void setup()
   altitudeNode.advertise(NODE_ALTITUDE).setName("Altitude")
                                       .setDatatype("float")
                                       .setUnit("m");
+#ifdef BME680
   gasNode.advertise(NODE_GAS).setName("Gas")
                               .setDatatype("float")
                               .setUnit(" KOhms");
   humidityNode.advertise(NODE_HUMIDITY).setName("Humidity")
                               .setDatatype("float")
                               .setUnit("%");
+#endif
   ledStripNode.advertise(NODE_AMBIENT).setName("All Leds")
                             .setDatatype("color").setFormat("rgb")
                             .settable(ledHandler);
@@ -350,13 +383,23 @@ void setup()
       strip.fill(strip.Color(0,128,0));
       strip.show();
       /* Extracted from library's example */
-      mFailedI2Cinitialization = !bme.begin();
+      mFailedI2Cinitialization = !bmx.begin();
       if (!mFailedI2Cinitialization) {
-        bme.setTemperatureOversampling(BME680_OS_8X);
-        bme.setHumidityOversampling(BME680_OS_2X);
-        bme.setPressureOversampling(BME680_OS_4X);
-        bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
-        bme.setGasHeater(320, 150); // 320*C for 150 ms
+#ifdef BME680
+        bmx.setTemperatureOversampling(BME680_OS_8X);
+        bmx.setHumidityOversampling(BME680_OS_2X);
+        bmx.setPressureOversampling(BME680_OS_4X);
+        bmx.setIIRFilterSize(BME680_FILTER_SIZE_3);
+        bmx.setGasHeater(320, 150); // 320*C for 150 ms
+#endif
+#ifdef BMP280
+      /* Default settings from datasheet. */
+      bmx.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
+                      Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
+                      Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
+                      Adafruit_BMP280::FILTER_X16,      /* Filtering. */
+                      Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
+#endif
       } else {
         printf("Faild to initialize I2C bus\r\n");
       }
