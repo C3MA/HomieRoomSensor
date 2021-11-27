@@ -299,23 +299,30 @@ void loopHandler()
 bool ledHandler(const HomieRange& range, const String& value) {
   if (range.isRange) return false;  // only one switch is present
 
-  mSomethingReceived = true; // Stop animation
-
-  int sep1 = value.indexOf(',');
-  int sep2 = value.indexOf(',', sep1 + 1);
-  if ((sep1 > 0) && (sep2 > 0)) {
-    int red = value.substring(0,sep1).toInt(); /* OpenHAB  hue (0-360°) */
-    int green = value.substring(sep1 + 1, sep2).toInt(); /* OpenHAB saturation (0-100%) */
-    int blue = value.substring(sep2 + 1, value.length()).toInt(); /* brightness (0-100%) */
-
-    uint8_t r = (red * 255) / 250;
-    uint8_t g = (green *255) / 250;
-    uint8_t b = (blue *255) / 250;
-    uint32_t c = strip.Color(r,g,b);
-    strip.fill(c);
-    strip.show();
-    ledStripNode.setProperty(NODE_AMBIENT).send(String(r) + "," + String(g) + "," + String(b));
+  Homie.getLogger() << "Received: " << (value) << endl;
+  if (value.equals("250,250,250")) {
+    mSomethingReceived = false; // enable animation again
+    ledStripNode.setProperty(NODE_AMBIENT).send(value);
     return true;
+  } else {
+    mSomethingReceived = true; // Stop animation
+
+    int sep1 = value.indexOf(',');
+    int sep2 = value.indexOf(',', sep1 + 1);
+    if ((sep1 > 0) && (sep2 > 0)) {
+      int red = value.substring(0,sep1).toInt(); 
+      int green = value.substring(sep1 + 1, sep2).toInt(); 
+      int blue = value.substring(sep2 + 1, value.length()).toInt(); 
+
+      uint8_t r = (red * 255) / 250;
+      uint8_t g = (green *255) / 250;
+      uint8_t b = (blue *255) / 250;
+      uint32_t c = strip.Color(r,g,b);
+      strip.fill(c);
+      strip.show();
+      ledStripNode.setProperty(NODE_AMBIENT).send(value);
+      return true;
+    }    
   }
   return false;
 }
