@@ -3,7 +3,7 @@ located in IKEAs Vindriktning
 
 after this upgrade it will measure:
 * air quality
-* temperatur
+* temperature
 * pressure
 * altitude
 
@@ -40,7 +40,7 @@ VCC          |       GND
 
 The following pins are used:
 * GPIO4  PM1006 particle sensor
-* GPIO2  WS2812 stripe out of three LEDs, replacing the orignal LEDs at front
+* GPIO2  WS2812 stripe out of three LEDs, replacing the original LEDs at front
 * GPIO15 Red LED    (optional)
 * GPIO12 Green LED  (optional)
 * GPIO13 Blue LED   (optional)
