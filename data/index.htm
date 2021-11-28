@@ -6,8 +6,24 @@
     <script type="text/javascript">
       function onBodyLoad(){
         const xhttp = new XMLHttpRequest();
+        xhttp.responseType = 'json';
         xhttp.onload = function() {
-          document.getElementById("debug").innerHTML = this.responseText;
+          var jsonResponse = this.response;
+          document.getElementById("temp").innerHTML = jsonResponse.temp
+          document.getElementById("altitude").innerHTML = jsonResponse.altitude;
+          document.getElementById("pressure").innerHTML = jsonResponse.pressure;
+          document.getElementById("particle").innerHTML = jsonResponse.particle;
+          if (jsonResponse.gas) {
+            document.getElementById("gas").innerHTML = jsonResponse.gas;
+          } else {
+            document.getElementById("rowGas").hidden = true;
+          }
+          if (jsonResponse.humidity) {
+            document.getElementById("humidity").innerHTML = jsonResponse.humidity;
+          } else {
+            document.getElementById("rowHumidity").hidden = true;
+          }
+          console.log(this.responseText);
           }
         xhttp.open("GET", "/sensors", true);
         xhttp.send();
@@ -17,11 +33,14 @@
   <body id="body" onload="onBodyLoad()">
     <h1>Room Sensor</h1>
     <table>
-      <th>
+      <thead>
+       <tr>
         <td>Sensor</td>
         <td>Value</td>
         <td></td>
-      </th>
+       </tr>
+      </thead>
+      <tbody>
       <tr>
         <td>Temperatur</td>
         <td id="temp">temp</td>
@@ -52,7 +71,7 @@
         <td id="particle">particle</td>
         <td>micro gram per quibik</td>
       </tr>
+    </tbody>
     </table>
-    <p id="debug">Nothing</p>
   </body>
 </html>
