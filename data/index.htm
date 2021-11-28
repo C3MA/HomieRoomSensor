@@ -3,8 +3,19 @@
   <head>
     <meta http-equiv="Content-type" content="text/html; charset=utf-8">
     <title>IKEA Home Sensor</title>
+    <style type="text/css">
+      tr.heading td {
+        background-color: black; color: white;
+      }
+      tr.d0 td {
+        background-color: #ffffff; color: black;
+      }
+      tr.d1 td {
+        background-color: #b8b8b8; color: black;
+      }
+    </style>
     <script type="text/javascript">
-      function onBodyLoad(){
+      function mySensorTimer(){
         const xhttp = new XMLHttpRequest();
         xhttp.responseType = 'json';
         xhttp.onload = function() {
@@ -28,45 +39,49 @@
         xhttp.open("GET", "/sensors", true);
         xhttp.send();
       }
+
+      function onBodyLoad(){
+        setInterval(mySensorTimer, 5000);
+      }
     </script>
   </head>
   <body id="body" onload="onBodyLoad()">
     <h1>Room Sensor</h1>
     <table>
       <thead>
-       <tr>
+       <tr class="heading">
         <td>Sensor</td>
         <td>Value</td>
         <td></td>
        </tr>
       </thead>
       <tbody>
-      <tr>
+      <tr class="d0">
         <td>Temperatur</td>
         <td id="temp">temp</td>
         <td>°C</td>
       </tr>
-      <tr id="rowHumidity">
+      <tr id="rowHumidity" class="d1">
         <td>Humidity</td>
         <td id="humidity">humidity</td>
         <td>%</td>
       </tr>
-      <tr id="rowGas">
+      <tr id="rowGas" class="d0">
         <td>Gas</td>
         <td id="gas">gas</td>
         <td> KOhms</td>
       </tr>
-      <tr>
+      <tr class="d1">
         <td>Altitude</td>
         <td id="altitude">altitude</td>
         <td>m</td>
       </tr>
-      <tr>
+      <tr class="d0">
         <td>Pressure</td>
         <td id="pressure">pressure</td>
         <td>hPa</td>
       </tr>
-      <tr>
+      <tr class="d1">
         <td>Particle</td>
         <td id="particle">particle</td>
         <td>micro gram per quibik</td>
