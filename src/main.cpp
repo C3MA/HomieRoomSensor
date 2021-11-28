@@ -97,7 +97,7 @@ void log(int level, String message, int code);
 bool mConfigured = false;
 bool mConnected = false;
 bool mFailedI2Cinitialization = false;
-AsyncWebServer* mHttp;
+AsyncWebServer* mHttp = NULL;
 
 /******************************* Sensor data **************************/
 HomieNode particle(NODE_PARTICLE, "particle", "number"); /**< Measuret in micro gram per quibik meter air volume */
@@ -209,7 +209,7 @@ void onHomieEvent(const HomieEvent &event)
     digitalWrite(WITTY_RGB_B, LOW);
     strip.fill(strip.Color(0,0,128));
     strip.show();
-    if (String(Homie.getConfiguration().mqtt.server.host).equals(MQTT_DUMMYHOST)) {
+    if (mHttp != NULL) {
       strip.fill(strip.Color(0,64,0));
       mConnectedNonMQTT = true;
     }
@@ -459,22 +459,22 @@ void setup()
       for (int i=0;i < (PIXEL_COUNT / 2); i++) {
         strip.setPixelColor(0, strip.Color(0,128,0));
       }
+      mHttp = new AsyncWebServer(80);
+      mHttp->on("/heap", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(200, "text/plain", String(ESP.getFreeHeap()));
+      });
+      mHttp->on("/sensors", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(200, "text/plain", sensorAsJSON());
+      });
+      mHttp->serveStatic("/", SPIFFS, "/").setDefaultFile("index.htm");
+      mHttp->begin();
+      Homie.getLogger() << "Webserver started" << endl;
     } else {
       for (int i=0;i < (PIXEL_COUNT / 2); i++) {
         strip.setPixelColor(0, strip.Color(0,0,128));
       }
     }
     strip.show();
-    mHttp = new AsyncWebServer(80);
-    mHttp->on("/heap", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(200, "text/plain", String(ESP.getFreeHeap()));
-    });
-    mHttp->on("/sensors", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(200, "text/plain", sensorAsJSON());
-    });
-    mHttp->serveStatic("/", SPIFFS, "/").setDefaultFile("index.htm");
-    mHttp->begin();
-    Homie.getLogger() << "Webserver started" << endl;
     digitalWrite(WITTY_RGB_B, HIGH);
   } else {
     strip.fill(strip.Color(128,0,0));
