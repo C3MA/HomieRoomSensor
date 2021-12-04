@@ -33,10 +33,10 @@
  ******************************************************************************/
 
 #define GPIO_WS2812         D4 /**< GPIO2 */
-#define SENSOR_PM1006_RX    D2 /**< GPIO4 */
+#define SENSOR_PM1006_RX    D2 /**< GPIO4  */
 #define SENSOR_PM1006_TX    -1 /**< Unused */
 #define WITTY_RGB_R         D8 /**< GPIO15 */
-#define WITTY_RGB_G         D6 /**< GPIO12 */
+#define WITTY_RGB_G         D6 /**< GPIO12 Used as 3.3V Power supply for the I2C Sensor */
 #define WITTY_RGB_B         D7 /**< GPIO13 */
 #define PM1006_BIT_RATE     9600
 #define PM1006_MQTT_UPDATE  5000 /**< Check the sensor every 10 seconds; New measurement is done every 20seconds by the sensor */
@@ -418,6 +418,8 @@ void setup()
     strip.show();
     digitalWrite(WITTY_RGB_B, HIGH);
   } else {
+    digitalWrite(WITTY_RGB_R, HIGH);
+    digitalWrite(WITTY_RGB_G, LOW);
     strip.fill(strip.Color(128,0,0));
     for (int i=0;i < (PIXEL_COUNT / 2); i++) {
       strip.setPixelColor(0, strip.Color(0,0,128));
