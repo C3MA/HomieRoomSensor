@@ -242,7 +242,9 @@ void bmpPublishValues() {
   gasNode.setProperty(NODE_GAS).send(String((bmx.gas_resistance / 1000.0)));
   humidityNode.setProperty(NODE_HUMIDITY).send(String(bmx.humidity));
 #endif
-
+  log(MQTT_LEVEL_DEBUG, String("Temp" + String(bmx.readTemperature()) + "\tPressure:" +
+      String(bmx.readPressure() / 100.0F) + "\t Altitude:"+
+      String(bmx.readAltitude(SEALEVELPRESSURE_HPA))), MQTT_LOG_I2READ);
   if ( (rgbTemp.get()) && (!mSomethingReceived) ) {
       if (bmx.readTemperature() < TEMPBORDER) {
         strip.setPixelColor(0, strip.Color(0,0,255));
@@ -466,4 +468,5 @@ void log(int level, String message, int statusCode)
     Homie.getMqttClient().publish(logTopic, 2, false, buffer.c_str());
     delete logTopic;
   }
+  Homie.getLogger() << (level) << "@" << (statusCode) << " " << (message) << endl;
 }
