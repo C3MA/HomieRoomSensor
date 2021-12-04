@@ -39,10 +39,10 @@ VCC          |       GND
 ```
 
 The following pins are used:
-* GPIO4  PM1006 particle sensor
+* GPIO4  PM1006 particle sensor PIN REST on Vindriktning board
 * GPIO2  WS2812 stripe out of three LEDs, replacing the orignal LEDs at front
 * GPIO15 Red LED    (optional)
-* GPIO12 Green LED  (optional)
+* GPIO12 Green LED  (optional) Used as 3.3V Supply for the I2C sensor
 * GPIO13 Blue LED   (optional)
 * GPIO13 VCC of I2C (3.3 V)
 * GPIO14 I2C clock
