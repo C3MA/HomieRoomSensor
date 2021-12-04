@@ -55,4 +55,6 @@ The following pins are used:
 * some wire
 
 # Sources
+For the Witty board
 * [https://github.com/amkuipers/witty Witty pinout]
+* [https://arduino.ua/products_pictures/large_AOC361-5.jpg Schematics]
