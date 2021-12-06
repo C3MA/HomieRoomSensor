@@ -27,7 +27,7 @@ usage: ota_updater.py [-h] -l BROKER_HOST -p BROKER_PORT [-u BROKER_USERNAME]
                       [-d BROKER_PASSWORD] [-t BASE_TOPIC] -i DEVICE_ID
                       firmware
 
-ota firmware update scirpt for ESP8226 implemenation of the Homie mqtt IoT
+ota firmware update script for ESP8226 implementation of the Homie mqtt IoT
 convention.
 
 positional arguments:
