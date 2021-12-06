@@ -391,6 +391,10 @@ void setup()
     if (i2cEnable.get()) {
       strip.fill(strip.Color(0,128,0));
       strip.show();
+#ifdef BME680
+    printf("Wait 1 second...\r\n");
+    delay(1000);
+#endif
       /* Extracted from library's example */
       mFailedI2Cinitialization = !bmx.begin();
       if (!mFailedI2Cinitialization) {
