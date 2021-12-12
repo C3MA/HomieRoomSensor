@@ -209,6 +209,7 @@ void onHomieEvent(const HomieEvent &event)
     digitalWrite(WITTY_RGB_R, LOW);
     if (!i2cEnable.get()) { /** keep green LED activated to power I2C sensor */
       digitalWrite(WITTY_RGB_G, LOW);
+      log(MQTT_LEVEL_INFO, F("I2C powersupply deactivated"), MQTT_LOG_I2CINIT);
     }
     digitalWrite(WITTY_RGB_B, LOW);
     strip.fill(strip.Color(0,0,128));
@@ -226,6 +227,9 @@ void onHomieEvent(const HomieEvent &event)
     break;
   case HomieEventType::OTA_SUCCESSFUL:
     ESP.restart();
+    break;
+  case HomieEventType::WIFI_CONNECTED:
+    digitalWrite(WITTY_RGB_B, HIGH);
     break;
   default:
     break;
@@ -440,7 +444,6 @@ void setup()
       strip.setPixelColor(0, strip.Color(0,0,128));
     }
     strip.show();
-    digitalWrite(WITTY_RGB_B, HIGH);
   } else {
     digitalWrite(WITTY_RGB_R, HIGH);
     strip.fill(strip.Color(128,0,0));
@@ -470,6 +473,7 @@ void loop()
     }
   } else {
     mButtonPressed=0U;
+    digitalWrite(WITTY_RGB_R, LOW);
   }
 
   if (mButtonPressed > BUTTON_MAX_CYCLE) {    
