@@ -403,8 +403,6 @@ void setup()
                             .setDatatype("integer");
 
   strip.begin();
-  /* activate I2C for BOSCH sensor */
-  Wire.begin(SENSOR_I2C_SDI, SENSOR_I2C_SCK);
 
   mConfigured = Homie.isConfigured();
   digitalWrite(WITTY_RGB_G, HIGH);
@@ -415,6 +413,10 @@ void setup()
     printf("Wait 1 second...\r\n");
     delay(1000);
 #endif
+      /* activate I2C for BOSCH sensor */
+      Wire.begin(SENSOR_I2C_SDI, SENSOR_I2C_SCK);
+      printf("Wait 50 milliseconds...\r\n");
+      delay(50);
       /* Extracted from library's example */
       mFailedI2Cinitialization = !bmx.begin();
       if (!mFailedI2Cinitialization) {
