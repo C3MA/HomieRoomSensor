@@ -51,7 +51,7 @@
 #define SEALEVELPRESSURE_HPA (1013.25)
 
 #define BUTTON_MAX_CYCLE        10000U  /**< Action: Reset configuration */
-#define BUTTON_MIN_ACTION_CYCLE 50U     /**< Minimum cycle to react on the button (e.g. 5 second) */
+#define BUTTON_MIN_ACTION_CYCLE 55U     /**< Minimum cycle to react on the button (e.g. 5 second) */
 #define BUTTON_CHECK_INTERVALL  100U     /**< Check every 100 ms the button state */
 
 #define LOG_TOPIC "log\0"
