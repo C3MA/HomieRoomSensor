@@ -50,6 +50,10 @@
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 
+#define BUTTON_MAX_CYCLE        10000U  /**< Action: Reset configuration */
+#define BUTTON_MIN_ACTION_CYCLE 20U     /**< Minimum cycle to react on the button (e.g. 1 second) */
+#define BUTTON_CHECK_INTERVALL  50U     /**< Check every 50 ms the button state */
+
 #define LOG_TOPIC "log\0"
 #define MQTT_LEVEL_ERROR    1
 #define MQTT_LEVEL_WARNING  10
@@ -78,6 +82,7 @@
 #define NODE_GAS                        "gas"
 #define NODE_HUMIDITY                   "humidity"
 #define NODE_AMBIENT                    "ambient"
+#define NODE_BUTTON                     "button"
 /******************************************************************************
  *                                     TYPE DEFS
  ******************************************************************************/
@@ -95,6 +100,7 @@ void log(int level, String message, int code);
 bool mConfigured = false;
 bool mConnected = false;
 bool mFailedI2Cinitialization = false;
+long mLastButtonAction = 0;
 
 /******************************* Sensor data **************************/
 HomieNode particle(NODE_PARTICLE, "particle", "number"); /**< Measuret in micro gram per quibik meter air volume */
@@ -105,6 +111,7 @@ HomieNode altitudeNode(NODE_ALTITUDE, "Altitude", "number");
 HomieNode gasNode(NODE_GAS, "Gas", "number");
 HomieNode humidityNode(NODE_HUMIDITY, "Humidity", "number");
 #endif
+HomieNode buttonNode(NODE_BUTTON, "Button", "number");
 
 /****************************** Output control ***********************/
 HomieNode ledStripNode /* to rule them all */("led", "RGB led", "color");
@@ -289,7 +296,10 @@ void loopHandler()
     if (i2cEnable.get() && (!mFailedI2Cinitialization)) {
       bmpPublishValues();
     }
-  
+
+    buttonNode.setProperty(NODE_BUTTON).send(String(mButtonPressed));
+    mButtonPressed=0U;
+
     lastRead = millis();
   }
   // Feed the dog -> ESP stay alive
@@ -378,7 +388,8 @@ void setup()
   ledStripNode.advertise(NODE_AMBIENT).setName("All Leds")
                             .setDatatype("color").setFormat("rgb")
                             .settable(ledHandler);
-
+  buttonNode.advertise(NODE_BUTTON).setName("Button pressed")
+                            .setDatatype("integer");
 
   strip.begin();
   /* activate I2C for BOSCH sensor */
@@ -439,19 +450,35 @@ void loop()
   Homie.loop();
   /* use the pin, receiving the soft serial additionally as button */
   if (digitalRead(GPIO_BUTTON) == LOW) {
-    mButtonPressed++;
-  } else {
-    mButtonPressed=0U;
+    if ((millis() - mLastButtonAction) > BUTTON_CHECK_INTERVALL) {
+      mButtonPressed++;
+    }
+    if (mButtonPressed > BUTTON_MIN_ACTION_CYCLE) {
+      digitalWrite(WITTY_RGB_R, HIGH);
+      digitalWrite(WITTY_RGB_G, LOW);
+      digitalWrite(WITTY_RGB_B, LOW);
+      strip.fill(strip.Color(0,0,0));
+      strip.setPixelColor(0, strip.Color((mButtonPressed % 100),0,0));
+      strip.setPixelColor(1, strip.Color((mButtonPressed / 100),0,0));
+      strip.setPixelColor(2, strip.Color((mButtonPressed / 100),0,0));
+      strip.show();
+    }
   }
 
-  if (mButtonPressed > 10000U) {
-    mButtonPressed=0U;
+  if (mButtonPressed > BUTTON_MAX_CYCLE) {    
+    mButtonPressed = (BUTTON_MAX_CYCLE -1);
     if (SPIFFS.exists("/homie/config.json")) {
+      strip.fill(strip.Color(0,128,0));
+      strip.show();
       printf("Resetting config\r\n");
       SPIFFS.remove("/homie/config.json");
       SPIFFS.end();
+      delay(50);
+      Homie.reboot();
     } else {
       printf("No config present\r\n");
+      strip.fill(strip.Color(0,0,128));
+      strip.show();
     }
   }
 }
