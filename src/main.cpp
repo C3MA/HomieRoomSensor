@@ -467,12 +467,12 @@ void setup()
   if (mConfigured)
   {
     if (i2cEnable.get()) {
-      strip.fill(strip.Color(0,128,0));
+      strip.fill(strip.Color(0,64,0));
       strip.show();
-#ifdef BME680
-    printf("Wait 1 second...\r\n");
-    delay(1000);
-#endif
+      printf("Wait 1 second...\r\n");
+      delay(1000);
+      strip.fill(strip.Color(0,128,0));
+
       /* Extracted from library's example */
       mFailedI2Cinitialization = !bmx.begin();
       if (!mFailedI2Cinitialization) {
@@ -558,8 +558,7 @@ void loop()
     mButtonPressed=0U;
   }
 
-  if (mButtonPressed > BUTTON_MAX_CYCLE) {    
-    mButtonPressed = (BUTTON_MAX_CYCLE -1);
+  if (mButtonPressed > BUTTON_MAX_CYCLE) {
     if (SPIFFS.exists("/homie/config.json")) {
       strip.fill(strip.Color(0,128,0));
       strip.show();
