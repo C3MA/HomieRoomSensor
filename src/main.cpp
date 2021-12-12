@@ -47,7 +47,6 @@
 
 #define PM1006_BIT_RATE 9600
 #define PM1006_MQTT_UPDATE 5000 /**< Check the sensor every 10 seconds; New measurement is done every 20seconds by the sensor */
-#define I2C_MAX_INIT       10
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 
