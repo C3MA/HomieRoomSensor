@@ -47,6 +47,7 @@
 
 #define PM1006_BIT_RATE 9600
 #define PM1006_MQTT_UPDATE 5000 /**< Check the sensor every 10 seconds; New measurement is done every 20seconds by the sensor */
+#define I2C_MAX_INIT       10
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 
@@ -353,7 +354,7 @@ bool ledHandler(const HomieRange& range, const String& value) {
  *****************************************************************************/
 
 void setup()
-{
+{ 
   SPIFFS.begin();
   Serial.begin(115200);
   Serial.setTimeout(2000);
@@ -407,8 +408,6 @@ void setup()
   if (mConfigured)
   {
     if (i2cEnable.get()) {
-      strip.fill(strip.Color(0,128,0));
-      strip.show();
 #ifdef BME680
     printf("Wait 1 second...\r\n");
     delay(1000);
@@ -416,6 +415,8 @@ void setup()
       /* Extracted from library's example */
       mFailedI2Cinitialization = !bmx.begin();
       if (!mFailedI2Cinitialization) {
+        strip.fill(strip.Color(0,64,0));
+        strip.show();
 #ifdef BME680
         bmx.setTemperatureOversampling(BME680_OS_8X);
         bmx.setHumidityOversampling(BME680_OS_2X);
@@ -443,7 +444,6 @@ void setup()
     digitalWrite(WITTY_RGB_B, HIGH);
   } else {
     digitalWrite(WITTY_RGB_R, HIGH);
-    digitalWrite(WITTY_RGB_G, LOW);
     strip.fill(strip.Color(128,0,0));
     for (int i=0;i < (PIXEL_COUNT / 2); i++) {
       strip.setPixelColor(0, strip.Color(0,0,128));
@@ -462,7 +462,6 @@ void loop()
     }
     if (mButtonPressed > BUTTON_MIN_ACTION_CYCLE) {
       digitalWrite(WITTY_RGB_R, HIGH);
-      digitalWrite(WITTY_RGB_G, LOW);
       digitalWrite(WITTY_RGB_B, LOW);
       strip.fill(strip.Color(0,0,0));
       strip.setPixelColor(0, strip.Color((mButtonPressed % 100),0,0));
