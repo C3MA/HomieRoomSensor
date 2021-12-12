@@ -42,8 +42,8 @@
 #define PM1006_MQTT_UPDATE  5000 /**< Check the sensor every 10 seconds; New measurement is done every 20seconds by the sensor */
 #define PIXEL_COUNT         3
 #define GPIO_BUTTON   SENSOR_PM1006_RX /**< Button and software serial share one pin on Witty board */
-#define SENSOR_I2C_SCK    D1 /**< GPIO14 - I2C clock pin */
-#define SENSOR_I2C_SDI    D5 /**< GPIO5  - I2C data pin */
+#define SENSOR_I2C_SCK    D5 /**< GPIO14 - I2C clock pin */
+#define SENSOR_I2C_SDI    D1 /**< GPIO5  - I2C data pin */
 
 #define PM1006_BIT_RATE 9600
 #define PM1006_MQTT_UPDATE 5000 /**< Check the sensor every 10 seconds; New measurement is done every 20seconds by the sensor */
