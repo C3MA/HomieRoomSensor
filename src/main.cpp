@@ -224,8 +224,17 @@ void onHomieEvent(const HomieEvent &event)
   case HomieEventType::MQTT_READY:
     mConnected=true;
     if (mFailedI2Cinitialization) {
-      log(MQTT_LEVEL_DEBUG, F("Could not find a valid BME680 sensor, check wiring or "
-                          "try a different address!"), MQTT_LOG_I2CINIT);
+      log(MQTT_LEVEL_DEBUG, 
+#ifdef BME680
+    "Could not find a valid BME680 sensor, check wiring or try a different address!"
+#else
+#ifdef BMP280
+    "Could not find a valid BMP280 sensor, check wiring or try a different address!"
+#else
+  "no I2C sensor defined"
+#endif
+#endif
+      , MQTT_LOG_I2CINIT);
     } else {
       log(MQTT_LEVEL_INFO, F("BME680 sensor found"), MQTT_LOG_I2CINIT);
     }
