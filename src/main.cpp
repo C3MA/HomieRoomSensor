@@ -51,8 +51,8 @@
 #define SEALEVELPRESSURE_HPA (1013.25)
 
 #define BUTTON_MAX_CYCLE        10000U  /**< Action: Reset configuration */
-#define BUTTON_MIN_ACTION_CYCLE 20U     /**< Minimum cycle to react on the button (e.g. 1 second) */
-#define BUTTON_CHECK_INTERVALL  50U     /**< Check every 50 ms the button state */
+#define BUTTON_MIN_ACTION_CYCLE 50U     /**< Minimum cycle to react on the button (e.g. 5 second) */
+#define BUTTON_CHECK_INTERVALL  100U     /**< Check every 100 ms the button state */
 
 #define LOG_TOPIC "log\0"
 #define MQTT_LEVEL_ERROR    1
@@ -297,11 +297,18 @@ void loopHandler()
       bmpPublishValues();
     }
 
-    buttonNode.setProperty(NODE_BUTTON).send(String(mButtonPressed));
-    mButtonPressed=0U;
-
+    /* Clean cycles buttons */
+    if (mButtonPressed <= BUTTON_MIN_ACTION_CYCLE) {
+      buttonNode.setProperty(NODE_BUTTON).send("0");
+    }
     lastRead = millis();
   }
+
+  /* if the user sees something via the LEDs, inform MQTT, too */
+  if (mButtonPressed > BUTTON_MIN_ACTION_CYCLE) {
+    buttonNode.setProperty(NODE_BUTTON).send(String(mButtonPressed));
+  }
+
   // Feed the dog -> ESP stay alive
   ESP.wdtFeed();
 }
@@ -463,6 +470,8 @@ void loop()
       strip.setPixelColor(2, strip.Color((mButtonPressed / 100),0,0));
       strip.show();
     }
+  } else {
+    mButtonPressed=0U;
   }
 
   if (mButtonPressed > BUTTON_MAX_CYCLE) {    
