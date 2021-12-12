@@ -42,8 +42,8 @@
 #define PM1006_MQTT_UPDATE  5000 /**< Check the sensor every 10 seconds; New measurement is done every 20seconds by the sensor */
 #define PIXEL_COUNT         3
 #define GPIO_BUTTON   SENSOR_PM1006_RX /**< Button and software serial share one pin on Witty board */
-#define SENSOR_I2C_SCK    D1 /**< GPIO14 - I2C clock pin */
-#define SENSOR_I2C_SDI    D5 /**< GPIO5  - I2C data pin */
+#define SENSOR_I2C_SCK    D5 /**< GPIO14 - I2C clock pin */
+#define SENSOR_I2C_SDI    D1 /**< GPIO5  - I2C data pin */
 
 #define PM1006_BIT_RATE 9600
 #define PM1006_MQTT_UPDATE 5000 /**< Check the sensor every 10 seconds; New measurement is done every 20seconds by the sensor */
@@ -212,6 +212,7 @@ void onHomieEvent(const HomieEvent &event)
     digitalWrite(WITTY_RGB_R, LOW);
     if (!i2cEnable.get()) { /** keep green LED activated to power I2C sensor */
       digitalWrite(WITTY_RGB_G, LOW);
+      log(MQTT_LEVEL_INFO, F("I2C powersupply deactivated"), MQTT_LOG_I2CINIT);
     }
     digitalWrite(WITTY_RGB_B, LOW);
     strip.fill(strip.Color(0,0,128));
@@ -413,7 +414,7 @@ bool ledHandler(const HomieRange& range, const String& value) {
  *****************************************************************************/
 
 void setup()
-{
+{ 
   SPIFFS.begin();
   Serial.begin(115200);
   Serial.setTimeout(2000);
@@ -459,23 +460,25 @@ void setup()
                             .setDatatype("integer");
 
   strip.begin();
-  /* activate I2C for BOSCH sensor */
-  Wire.begin(SENSOR_I2C_SDI, SENSOR_I2C_SCK);
 
   mConfigured = Homie.isConfigured();
   digitalWrite(WITTY_RGB_G, HIGH);
   if (mConfigured)
   {
     if (i2cEnable.get()) {
-      strip.fill(strip.Color(0,64,0));
-      strip.show();
-      printf("Wait 1 second...\r\n");
-      delay(1000);
-      strip.fill(strip.Color(0,128,0));
-
+#ifdef BME680
+    printf("Wait 1 second...\r\n");
+    delay(1000);
+#endif
+      /* activate I2C for BOSCH sensor */
+      Wire.begin(SENSOR_I2C_SDI, SENSOR_I2C_SCK);
+      printf("Wait 50 milliseconds...\r\n");
+      delay(50);
       /* Extracted from library's example */
       mFailedI2Cinitialization = !bmx.begin();
       if (!mFailedI2Cinitialization) {
+        strip.fill(strip.Color(0,64,0));
+        strip.show();
 #ifdef BME680
         bmx.setTemperatureOversampling(BME680_OS_8X);
         bmx.setHumidityOversampling(BME680_OS_2X);
@@ -519,10 +522,8 @@ void setup()
       }
     }
     strip.show();
-    digitalWrite(WITTY_RGB_B, HIGH);
   } else {
     digitalWrite(WITTY_RGB_R, HIGH);
-    digitalWrite(WITTY_RGB_G, LOW);
     strip.fill(strip.Color(128,0,0));
     for (int i=0;i < (PIXEL_COUNT / 2); i++) {
       strip.setPixelColor(0, strip.Color(0,0,128));
@@ -546,7 +547,6 @@ void loop()
     }
     if (mButtonPressed > BUTTON_MIN_ACTION_CYCLE) {
       digitalWrite(WITTY_RGB_R, HIGH);
-      digitalWrite(WITTY_RGB_G, LOW);
       digitalWrite(WITTY_RGB_B, LOW);
       strip.fill(strip.Color(0,0,0));
       strip.setPixelColor(0, strip.Color((mButtonPressed % 100),0,0));
@@ -556,6 +556,7 @@ void loop()
     }
   } else {
     mButtonPressed=0U;
+    digitalWrite(WITTY_RGB_R, LOW);
   }
 
   if (mButtonPressed > BUTTON_MAX_CYCLE) {
