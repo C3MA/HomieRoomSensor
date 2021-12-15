@@ -84,9 +84,26 @@
 
 #define MQTT_DUMMYHOST                  "localhost"
 #define NODE_BUTTON                     "button"
+
+#define PORTNUMBER_HTTP                   80      /**< IANA TCP/IP port number, used for HTTP / web traffic */
+
+#define SERIAL_RCEVBUF_MAX                80      /**< Maximum 80 characters can be received from the PM1006 sensor */
+#define MEASURE_POINT_MAX                 1024    /**< Amount of measure point, that can be stored */
+
 /******************************************************************************
  *                                     TYPE DEFS
  ******************************************************************************/
+
+typedef struct {
+  long timestamp;
+  float temp;
+#ifdef BME680
+  uint32_t gas_resistance;
+  float humidity;
+#endif
+  float pressure;
+  int pm25;
+} sensor_point;
 
 /******************************************************************************
  *                            FUNCTION PROTOTYPES
@@ -146,13 +163,16 @@ Adafruit_BMP280 bmx; // connected via I2C
 Adafruit_NeoPixel strip(PIXEL_COUNT, GPIO_WS2812, NEO_GRB + NEO_KHZ800);
 
 // Variablen
-uint8_t serialRxBuf[80];
+uint8_t serialRxBuf[SERIAL_RCEVBUF_MAX];
 uint8_t rxBufIdx = 0;
 int mParticle_pM25 = 0;
 int last = 0;
 unsigned int mButtonPressed = 0;
 bool mSomethingReceived = false;
 bool mConnectedNonMQTT = false;
+
+sensor_point  mMeasureSeries[MEASURE_POINT_MAX];
+uint32_t      mMeasureIndex = 0;
 
 /******************************************************************************
  *                            LOCAL FUNCTIONS
@@ -299,7 +319,7 @@ void bmpPublishValues() {
 
 /**
  * @brief Generate JSON with last measured values
- * For the update intervall, please check @see PM1006_MQTT_UPDATE
+ * For the update interval, please check @see PM1006_MQTT_UPDATE
  * @return String with JSON
  */
 String sensorAsJSON(void) {
@@ -433,7 +453,8 @@ void setup()
   rgbDim.setDefaultValue(100).setValidator([] (long candidate) {
     return (candidate > 1) && (candidate <= 200);
   });
-  memset(serialRxBuf, 0, 80);
+  memset(serialRxBuf, 0, SERIAL_RCEVBUF_MAX);
+  memset(mMeasureSeries, 0, sizeof(sensor_point) * MEASURE_POINT_MAX);
 
   pmSerial.begin(PM1006_BIT_RATE);
   Homie.setup();
@@ -509,7 +530,7 @@ void setup()
       for (int i=0;i < (PIXEL_COUNT / 2); i++) {
         strip.setPixelColor(0, strip.Color(0,128,0));
       }
-      mHttp = new AsyncWebServer(80);
+      mHttp = new AsyncWebServer(PORTNUMBER_HTTP);
       mHttp->on("/heap", HTTP_GET, [](AsyncWebServerRequest *request){
         request->send(200, "text/plain", String(ESP.getFreeHeap()));
       });
@@ -533,7 +554,7 @@ void loop()
   if (!mConnectedNonMQTT) {
     Homie.loop();
   } else {
-    /* call the custom loop direclty, as Homie is deactivated */
+    /* call the custom loop directly, as Homie is deactivated */
     loopHandler();
   }
   /* use the pin, receiving the soft serial additionally as button */

@@ -54,7 +54,15 @@ The following pins are used:
 * BMP280 sensor
 * some wire
 
+# Webserver
+
+This version has a webserver activated, if MQTT server is set to **localhost**.
+
+Every 20 seconds a measurement is performed.
+This is shown in a diagram via chart.js
+
 # Sources
 For the Witty board
 * [https://github.com/amkuipers/witty Witty pinout]
 * [https://arduino.ua/products_pictures/large_AOC361-5.jpg Schematics]
+* [https://www.chartjs.org/docs/latest/getting-started/integration.html]
