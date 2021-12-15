@@ -258,9 +258,9 @@ void bmpPublishValues() {
       String(bmx.readAltitude(SEALEVELPRESSURE_HPA))), MQTT_LOG_I2READ);
   if ( (rgbTemp.get()) && (!mSomethingReceived) ) {
       if (bmx.readTemperature() < TEMPBORDER) {
-        strip.setPixelColor(0, strip.Color(0,0,255));
+        strip.setPixelColor(0, strip.Color(0,0,127));
       } else {
-        strip.setPixelColor(0, strip.Color(255,0,0));
+        strip.setPixelColor(0, strip.Color(127,0,0));
       }
       strip.show();
   }
@@ -286,11 +286,11 @@ void loopHandler()
       particle.setProperty(NODE_PARTICLE).send(String(pM25));
       if (!mSomethingReceived) {
         if (pM25 < 35) {
-          strip.fill(strip.Color(0, 255, 0)); /* green */
+          strip.fill(strip.Color(0, 127, 0)); /* green */
         } else if (pM25 < 85) {
-          strip.fill(strip.Color(255, 127, 0)); /* orange */
+          strip.fill(strip.Color(127, 64, 0)); /* orange */
         } else {
-          strip.fill(strip.Color(255, 0, 0)); /* red */
+          strip.fill(strip.Color(127, 0, 0)); /* red */
         }
         strip.show();
       }
