@@ -13,6 +13,6 @@
 #define HOMIE_SETTINGS
 
 #define HOMIE_FIRMWARE_NAME     "RoomSensor"
-#define HOMIE_FIRMWARE_VERSION  "2.1.0"
+#define HOMIE_FIRMWARE_VERSION  "2.2.0"
 
 #endif
