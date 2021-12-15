@@ -39,7 +39,7 @@
 #define WITTY_RGB_G         D6 /**< GPIO12 Used as 3.3V Power supply for the I2C Sensor */
 #define WITTY_RGB_B         D7 /**< GPIO13 */
 #define PM1006_BIT_RATE     9600
-#define PM1006_MQTT_UPDATE  5000 /**< Check the sensor every 10 seconds; New measurement is done every 20seconds by the sensor */
+#define PM1006_MQTT_UPDATE  30000 /**< Check the sensor every 30 seconds; New measurement is done every 20seconds by the PM1006 sensor */
 #define PIXEL_COUNT         3
 #define GPIO_BUTTON   SENSOR_PM1006_RX /**< Button and software serial share one pin on Witty board */
 #define SENSOR_I2C_SCK    D5 /**< GPIO14 - I2C clock pin */
