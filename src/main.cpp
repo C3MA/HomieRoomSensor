@@ -74,6 +74,8 @@
   strcat(topic, "/");                                                                                                                         \
   strcat(topic, test);         
 
+#define PERCENT2FACTOR(b, a)               ((b * a.get()) / 100)
+
 #define NUMBER_TYPE                     "Number"
 #define NODE_PARTICLE                   "particle"
 #define NODE_TEMPERATUR                 "temp"
@@ -133,6 +135,7 @@ HomieSetting<bool> i2cEnable("i2c",
 
 );
 HomieSetting<bool> rgbTemp("rgbTemp", "Show temperature via red (>20 °C) and blue (< 20°C)");
+HomieSetting<long> rgbDim("rgbDim", "Factor (1 to 200%) of the status LEDs");
 
 static SoftwareSerial pmSerial(SENSOR_PM1006_RX, SENSOR_PM1006_TX);
 #ifdef BME680
@@ -289,9 +292,9 @@ void bmpPublishValues() {
       String(bmx.readAltitude(SEALEVELPRESSURE_HPA))), MQTT_LOG_I2READ);
   if ( (rgbTemp.get()) && (!mSomethingReceived) ) {
       if (bmx.readTemperature() < TEMPBORDER) {
-        strip.setPixelColor(0, strip.Color(0,0,255));
+        strip.setPixelColor(0, strip.Color(0,0,PERCENT2FACTOR(127, rgbDim)));
       } else {
-        strip.setPixelColor(0, strip.Color(255,0,0));
+        strip.setPixelColor(0, strip.Color(PERCENT2FACTOR(127, rgbDim),0,0));
       }
       strip.show();
   }
@@ -342,11 +345,11 @@ void loopHandler()
       }
       if (!mSomethingReceived) {
         if (mParticle_pM25 < 35) {
-          strip.fill(strip.Color(0, 255, 0)); /* green */
+          strip.fill(strip.Color(0, PERCENT2FACTOR(127, rgbDim), 0)); /* green */
         } else if (mParticle_pM25 < 85) {
-          strip.fill(strip.Color(255, 127, 0)); /* orange */
+          strip.fill(strip.Color(PERCENT2FACTOR(127, rgbDim), PERCENT2FACTOR(64, rgbDim), 0)); /* orange */
         } else {
-          strip.fill(strip.Color(255, 0, 0)); /* red */
+          strip.fill(strip.Color(PERCENT2FACTOR(127, rgbDim), 0, 0)); /* red */
         }
         strip.show();
       }
@@ -430,6 +433,9 @@ void setup()
   Homie.onEvent(onHomieEvent);
   i2cEnable.setDefaultValue(true);
   rgbTemp.setDefaultValue(false);
+  rgbDim.setDefaultValue(100).setValidator([] (long candidate) {
+    return (candidate > 1) && (candidate <= 200);
+  });
   memset(serialRxBuf, 0, 80);
 
   pmSerial.begin(PM1006_BIT_RATE);
@@ -477,7 +483,7 @@ void setup()
       /* Extracted from library's example */
       mFailedI2Cinitialization = !bmx.begin();
       if (!mFailedI2Cinitialization) {
-        strip.fill(strip.Color(0,64,0));
+        strip.fill(strip.Color(0,PERCENT2FACTOR(64, rgbDim),0));
         strip.show();
 #ifdef BME680
         bmx.setTemperatureOversampling(BME680_OS_8X);
@@ -518,15 +524,8 @@ void setup()
       Homie.getLogger() << "Webserver started" << endl;
     } else {
       for (int i=0;i < (PIXEL_COUNT / 2); i++) {
-        strip.setPixelColor(0, strip.Color(0,0,128));
+        strip.setPixelColor(0, strip.Color(0,0, PERCENT2FACTOR(128, rgbDim)));
       }
-    }
-    strip.show();
-  } else {
-    digitalWrite(WITTY_RGB_R, HIGH);
-    strip.fill(strip.Color(128,0,0));
-    for (int i=0;i < (PIXEL_COUNT / 2); i++) {
-      strip.setPixelColor(0, strip.Color(0,0,128));
     }
     strip.show();
   }
@@ -561,7 +560,7 @@ void loop()
 
   if (mButtonPressed > BUTTON_MAX_CYCLE) {
     if (SPIFFS.exists("/homie/config.json")) {
-      strip.fill(strip.Color(0,128,0));
+      strip.fill(strip.Color(0,PERCENT2FACTOR(127, rgbDim),0));
       strip.show();
       printf("Resetting config\r\n");
       SPIFFS.remove("/homie/config.json");
