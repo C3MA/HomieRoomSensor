@@ -341,6 +341,41 @@ String sensorAsJSON(void) {
 }
 
 /**
+ * @brief Generate JSON with all available sensors
+ * 
+ * @return String 
+ */
+String sensorHeader(void) {
+  String buffer;
+  StaticJsonDocument<500> doc;
+  doc.add("milli");
+  doc.add("temp");  
+#ifdef BME680
+  doc.add("gas");
+  doc.add("humidity");
+#endif
+  doc.add("altitude");
+  doc.add("pressure");
+  doc.add("particle");
+  serializeJson(doc, buffer);
+  return buffer;
+}
+
+/**
+ * @brief Generate JSON with all sensor values
+ * Array of JSON with all measured elements until now
+ * 
+ * @return String 
+ */
+String sensorDatasets(void) {
+  String buffer;
+  StaticJsonDocument<500> doc;
+  doc["count"] = String(mMeasureIndex);
+  serializeJson(doc, buffer);
+  return buffer;
+}
+
+/**
  * @brief Main loop, triggered by the Homie API
  * All logic needs to be done here.
  * 
@@ -379,6 +414,9 @@ void loopHandler()
         bmpPublishValues();
       }
     }
+
+    // FIXME: add the measured data into the big list
+    mMeasureIndex++;
 
     /* Clean cycles buttons */
     if ((!mConnectedNonMQTT) && (mButtonPressed <= BUTTON_MIN_ACTION_CYCLE)) {
@@ -535,7 +573,13 @@ void setup()
         request->send(200, "text/plain", String(ESP.getFreeHeap()));
       });
       mHttp->on("/sensors", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send(200, "text/plain", sensorAsJSON());
+        request->send(200, "application/json", sensorAsJSON());
+      });
+      mHttp->on("/header", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(200, "application/json", sensorHeader());
+      });
+      mHttp->on("/datasets", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(200, "application/json", sensorDatasets());
       });
       mHttp->serveStatic("/", SPIFFS, "/").setDefaultFile("index.htm");
       mHttp->begin();
