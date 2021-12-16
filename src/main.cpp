@@ -381,14 +381,14 @@ void loopHandler()
     }
 
     /* Clean cycles buttons */
-    if (mButtonPressed <= BUTTON_MIN_ACTION_CYCLE) {
+    if ((!mConnectedNonMQTT) && (mButtonPressed <= BUTTON_MIN_ACTION_CYCLE)) {
       buttonNode.setProperty(NODE_BUTTON).send("0");
     }
     lastRead = millis();
   }
 
   /* if the user sees something via the LEDs, inform MQTT, too */
-  if (mButtonPressed > BUTTON_MIN_ACTION_CYCLE) {
+  if ((!mConnectedNonMQTT) &&  (mButtonPressed > BUTTON_MIN_ACTION_CYCLE)) {
     buttonNode.setProperty(NODE_BUTTON).send(String(mButtonPressed));
   }
 
