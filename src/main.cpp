@@ -336,6 +336,7 @@ String sensorAsJSON(void) {
   doc["altitude"] = String(altitude);
   doc["pressure"] = String(atmospheric);
   doc["particle"] = String(mParticle_pM25);
+  doc["cycle"] = String(mMeasureIndex);
   serializeJson(doc, buffer);
   return buffer;
 }
@@ -363,14 +364,67 @@ String sensorHeader(void) {
 
 /**
  * @brief Generate JSON with all sensor values
- * Array of JSON with all measured elements until now
+ * Array of JSON with all measured elements to show in the web browser.
+ * Example:
+ * <code>
+ * dynamicData = {
+ *              labels: [ "0", "-30", "-60", "-90", "-120", "-160" ],
+ *              datasets: [{
+ *                  label: 'temp',
+ *                  data: [24, 22, 23, 25, 22, 23],
+ *                  borderColor: "rgba(255,0,0,1)"
+ *              }, {
+ *                label: 'pressure',
+ *                data: [1000, 1002, 1003, 999, 996, 1000],
+ *                borderColor: "rgba(0,0,255,1)"
+ *              }
+ *            ]
+ *            }
+ * </code>
  * 
  * @return String 
  */
-String sensorDatasets(void) {
+String diagramJson(void) {
+  int i;
   String buffer;
+  String bufferLabels;
+  String bufferDataContent;
+  String bufferData;
+  String bufferDatasets;
+  long now = millis();
   StaticJsonDocument<500> doc;
-  doc["count"] = String(mMeasureIndex);
+  StaticJsonDocument<500> docLabels;
+  StaticJsonDocument<500> docDataset;
+  StaticJsonDocument<500> docDatasets;
+  StaticJsonDocument<500> docDataTemp;
+  StaticJsonDocument<500> docDataPressure;
+  for(i=0; i < mMeasureIndex; i++) {
+    docLabels.add(String(String((now - mMeasureSeries[i].timestamp) / 1000) + String("s")));
+    docDataTemp.add(String(mMeasureSeries[i].temp));
+    docDataPressure.add(String(mMeasureSeries[i].pressure));
+  }
+  serializeJson(docLabels, bufferLabels);
+  /* generate first block for Temperature */
+  docDataset.clear();
+  docDataset["label"] = "Temp";
+  serializeJson(docDataTemp, bufferDataContent);
+  docDataset["data"] = bufferDataContent;
+  docDataset["borderColor"] = "rgba(255,0,0,1)";
+  serializeJson(docDataset, bufferData);
+  docDatasets.add(bufferData);
+  /* generate second block for Pressure */
+  docDataset.clear();
+  docDataset["label"] = "Pressure";
+  serializeJson(docDataPressure, bufferDataContent);
+  docDataset["data"] = bufferDataContent;
+  docDataset["borderColor"] = "rgba(0,0,255,1)";
+  serializeJson(docDataset, bufferData);
+  docDatasets.add(bufferData);
+
+
+  serializeJson(docDatasets, bufferDatasets);
+  doc["labels"] = bufferLabels;
+  doc["datasets"] = bufferDatasets;
   serializeJson(doc, buffer);
   return buffer;
 }
@@ -416,6 +470,10 @@ void loopHandler()
     }
 
     // FIXME: add the measured data into the big list
+    mMeasureSeries[mMeasureIndex].timestamp = millis();
+    mMeasureSeries[mMeasureIndex].pm25 = millis() / 100; /* Dummy */
+    mMeasureSeries[mMeasureIndex].temp = random(10,30) * 1.0f; /* Dummy */
+    mMeasureSeries[mMeasureIndex].pressure = random(900,1050) * 1.0f; /* Dummy */
     mMeasureIndex++;
 
     /* Clean cycles buttons */
@@ -578,8 +636,8 @@ void setup()
       mHttp->on("/header", HTTP_GET, [](AsyncWebServerRequest *request){
         request->send(200, "application/json", sensorHeader());
       });
-      mHttp->on("/datasets", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send(200, "application/json", sensorDatasets());
+      mHttp->on("/diagram", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(200, "application/json", diagramJson());
       });
       mHttp->serveStatic("/", SPIFFS, "/").setDefaultFile("index.htm");
       mHttp->begin();
