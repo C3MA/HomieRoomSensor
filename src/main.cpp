@@ -392,6 +392,7 @@ String diagramJson(void) {
   String bufferLabels = "\"\"";
   String bufferDataTemp = "\"\"";
   String bufferDataPressure = "\"\"";
+  String bufferDataPM = "\"\"";
   String bufferDatasets;
   String bufferData;
   if (mMeasureSeries == NULL) {
@@ -404,17 +405,19 @@ String diagramJson(void) {
     bufferLabels = "[ \"" + String((now - mMeasureSeries[0].timestamp) / 1000) + "s";
     bufferDataTemp = "[ \"" + String(mMeasureSeries[0].temp);
     bufferDataPressure = "[ \"" + String(mMeasureSeries[0].pressure);
+    bufferDataPM = "[ \"" + String(mMeasureSeries[0].pm25);
   }
   for(i=1; i < mMeasureIndex; i++) {
     bufferLabels += "\", \"" + String((now - mMeasureSeries[i].timestamp) / 1000) + "s";
     bufferDataTemp += "\", \"" + String(mMeasureSeries[i].temp);
     bufferDataPressure += "\", \"" + String(mMeasureSeries[i].pressure);
-    /* float altitude = 44330.0 * (1.0 - pow(atmospheric / SEALEVELPRESSURE_HPA, 0.1903)); */
+    bufferDataPM += "\", \"" + String(mMeasureSeries[i].pm25);
   }
   if (mMeasureIndex > 0) {
     bufferLabels += "\" ]";
     bufferDataTemp += "\" ]";
     bufferDataPressure += "\" ]";
+    bufferDataPM += "\" ]";
   }
   /* Generate label */
   buffer = "{ \"labels\" : " +  bufferLabels + ",\n";
@@ -426,9 +429,13 @@ String diagramJson(void) {
   /* generate second block for Pressure */
   buffer += ", ";
   buffer += "{\n \"label\" : \"Pressure\",\n \"data\" : " + bufferDataPressure + ",\n \"borderColor\" : \"rgba(0,0,255,1)\" \n}";
+  
+  /* generate third block for PM2.5 values */
+  buffer += ", ";
+  buffer += "{\n \"label\" : \"PM 2.5\",\n \"data\" : " + bufferDataPM + ",\n \"borderColor\" : \"rgba(0,255,0,1)\" \n}";
+    
   /* TODO, next ones ... */
   
-
   buffer += "]\n }";
   return buffer;
 }
