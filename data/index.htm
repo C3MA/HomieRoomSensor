@@ -14,7 +14,6 @@
         background-color: #b8b8b8; color: black;
       }
     </style>
-    <script src="/chart.min.js"></script>
     <script type="text/javascript">
       function mySensorTimer(){
         const xhttp = new XMLHttpRequest();
@@ -43,34 +42,6 @@
 
       function onBodyLoad(){
         setInterval(mySensorTimer, 5000);
-
-        // Test chart
-        const ctx = document.getElementById('myChart');
-        dynamicData = {
-                labels: [ "0", "-30", "-60", "-90", "-120", "-160" ],
-                datasets: [{
-                    label: 'temp',
-                    data: [24, 22, 23, 25, 22, 23],
-                    borderColor: "rgba(255,0,0,1)"
-                }, {
-                  label: 'pressure',
-                  data: [1000, 1002, 1003, 999, 996, 1000],
-                  borderColor: "rgba(0,0,255,1)"
-                }
-              ]
-              }
-        const myChart = new Chart(ctx, {
-            type: 'line',
-            data: dynamicData,
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: false
-                    }
-                }
-            }
-        });
-
       }
     </script>
   </head>
@@ -117,6 +88,9 @@
       </tr>
     </tbody>
     </table>
-    <canvas id="myChart" width="100%" height="100"></canvas>
+    <h1>Diagram</h1>
+    <p>
+      Can be found on the <a href="chart.htm">next page</a>.
+    </p>
   </body>
 </html>
