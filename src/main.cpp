@@ -82,7 +82,6 @@
 #define NODE_HUMIDITY                   "humidity"
 #define NODE_AMBIENT                    "ambient"
 
-#define MQTT_DUMMYHOST                  "localhost"
 #define NODE_BUTTON                     "button"
 
 #define PORTNUMBER_HTTP                   80      /**< IANA TCP/IP port number, used for HTTP / web traffic */
@@ -623,9 +622,7 @@ void setup()
       }
     }
     strip.fill(strip.Color(0,0,0));
-    String mqttHost = String(Homie.getConfiguration().mqtt.server.host);
-    if (mqttHost.equals(MQTT_DUMMYHOST)) {
-      Homie.getLogger() << "Server without MQTT" << endl;
+    
       for (int i=0;i < (PIXEL_COUNT / 2); i++) {
         strip.setPixelColor(0, strip.Color(0,128,0));
       }
@@ -645,11 +642,6 @@ void setup()
       mHttp->serveStatic("/", SPIFFS, "/").setDefaultFile("standalone.htm");
       mHttp->begin();
       Homie.getLogger() << "Webserver started" << endl;
-    } else {
-      for (int i=0;i < (PIXEL_COUNT / 2); i++) {
-        strip.setPixelColor(0, strip.Color(0,0, PERCENT2FACTOR(128, rgbDim)));
-      }
-    }
     strip.show();
   }
 }
