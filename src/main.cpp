@@ -387,45 +387,40 @@ String sensorHeader(void) {
 String diagramJson(void) {
   int i;
   String buffer;
-  String bufferLabels;
-  String bufferDataContent;
-  String bufferData;
+  String bufferLabels = "\"\"";
+  String bufferDataTemp = "\"\"";
+  String bufferDataPressure = "\"\"";
   String bufferDatasets;
+  String bufferData;
   long now = millis();
-  StaticJsonDocument<500> doc;
-  StaticJsonDocument<500> docLabels;
-  StaticJsonDocument<500> docDataset;
-  StaticJsonDocument<500> docDatasets;
-  StaticJsonDocument<500> docDataTemp;
-  StaticJsonDocument<500> docDataPressure;
-  for(i=0; i < mMeasureIndex; i++) {
-    docLabels.add(String(String((now - mMeasureSeries[i].timestamp) / 1000) + String("s")));
-    docDataTemp.add(String(mMeasureSeries[i].temp));
-    docDataPressure.add(String(mMeasureSeries[i].pressure));
+  if (mMeasureIndex > 0) {
+    bufferLabels = "[ \"" + String((now - mMeasureSeries[0].timestamp) / 1000) + "s";
+    bufferDataTemp = "[ \"" + String(mMeasureSeries[0].temp);
+    bufferDataPressure = "[ \"" + String(mMeasureSeries[0].pressure);
   }
-  serializeJson(docLabels, bufferLabels);
+  for(i=1; i < mMeasureIndex; i++) {
+    bufferLabels += "\", \"" + String((now - mMeasureSeries[i].timestamp) / 1000) + "s";
+    bufferDataTemp += "\", \"" + String(mMeasureSeries[i].temp);
+    bufferDataPressure += "\", \"" + String(mMeasureSeries[i].pressure);
+  }
+  if (mMeasureIndex > 0) {
+    bufferLabels += "\" ]";
+    bufferDataTemp += "\" ]";
+    bufferDataPressure += "\" ]";
+  }
+  /* Generate label */
+  buffer = "{ \"labels\" : " +  bufferLabels + ",\n";
+  buffer += "\"datasets\" : [";
+
   /* generate first block for Temperature */
-  docDataset.clear();
-  docDataset["label"] = "Temp";
-  serializeJson(docDataTemp, bufferDataContent);
-  docDataset["data"] = bufferDataContent;
-  docDataset["borderColor"] = "rgba(255,0,0,1)";
-  serializeJson(docDataset, bufferData);
-  docDatasets.add(bufferData);
+  buffer += "{\n \"label\" : \"Temp\",\n \"data\" : " + bufferDataTemp + ",\n \"borderColor\" : \"rgba(255,0,0,1)\" \n}";
+  
   /* generate second block for Pressure */
-  docDataset.clear();
-  docDataset["label"] = "Pressure";
-  serializeJson(docDataPressure, bufferDataContent);
-  docDataset["data"] = bufferDataContent;
-  docDataset["borderColor"] = "rgba(0,0,255,1)";
-  serializeJson(docDataset, bufferData);
-  docDatasets.add(bufferData);
+  buffer += ", ";
+  buffer += "{\n \"label\" : \"Pressure\",\n \"data\" : " + bufferDataPressure + ",\n \"borderColor\" : \"rgba(0,0,255,1)\" \n}";
+  /* TODO, next ones ... */
 
-
-  serializeJson(docDatasets, bufferDatasets);
-  doc["labels"] = bufferLabels;
-  doc["datasets"] = bufferDatasets;
-  serializeJson(doc, buffer);
+  buffer += "]\n }";
   return buffer;
 }
 
