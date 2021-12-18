@@ -94,7 +94,7 @@
  *                                     TYPE DEFS
  ******************************************************************************/
 
-typedef struct {
+typedef struct s_point {
   long timestamp;
   float temp;
 #ifdef BME680
@@ -171,7 +171,7 @@ unsigned int mButtonPressed = 0;
 bool mSomethingReceived = false;
 bool mConnectedNonMQTT = false;
 
-sensor_point  mMeasureSeries[MEASURE_POINT_MAX];
+sensor_point* mMeasureSeries;
 uint32_t      mMeasureIndex = 0;
 
 /******************************************************************************
@@ -392,6 +392,11 @@ String diagramJson(void) {
   String bufferDataPressure = "\"\"";
   String bufferDatasets;
   String bufferData;
+  if (mMeasureSeries == NULL) {
+    buffer = "{ \"error\": \"Malloc failed\" }";
+    return buffer;
+  }
+
   long now = millis();
   if (mMeasureIndex > 0) {
     bufferLabels = "[ \"" + String((now - mMeasureSeries[0].timestamp) / 1000) + "s";
@@ -465,11 +470,13 @@ void loopHandler()
     }
 
     // FIXME: add the measured data into the big list
-    mMeasureSeries[mMeasureIndex].timestamp = millis();
-    mMeasureSeries[mMeasureIndex].pm25 = millis() / 100; /* Dummy */
-    mMeasureSeries[mMeasureIndex].temp = random(10,30) * 1.0f; /* Dummy */
-    mMeasureSeries[mMeasureIndex].pressure = random(900,1050) * 1.0f; /* Dummy */
-    mMeasureIndex++;
+    if (mMeasureSeries != NULL) {
+      mMeasureSeries[mMeasureIndex].timestamp = millis();
+      mMeasureSeries[mMeasureIndex].pm25 = millis() / 100; /* Dummy */
+      mMeasureSeries[mMeasureIndex].temp = random(10,30) * 1.0f; /* Dummy */
+      mMeasureSeries[mMeasureIndex].pressure = random(900,1050) * 1.0f; /* Dummy */
+      mMeasureIndex++;
+    }
 
     /* Clean cycles buttons */
     if ((!mConnectedNonMQTT) && (mButtonPressed <= BUTTON_MIN_ACTION_CYCLE)) {
@@ -545,7 +552,6 @@ void setup()
     return (candidate > 1) && (candidate <= 200);
   });
   memset(serialRxBuf, 0, SERIAL_RCEVBUF_MAX);
-  memset(mMeasureSeries, 0, sizeof(sensor_point) * MEASURE_POINT_MAX);
 
   pmSerial.begin(PM1006_BIT_RATE);
   Homie.setup();
@@ -580,6 +586,8 @@ void setup()
   digitalWrite(WITTY_RGB_G, HIGH);
   if (mConfigured)
   {
+    mMeasureSeries = (sensor_point *) malloc(sizeof(sensor_point) * MEASURE_POINT_MAX);
+    memset(mMeasureSeries, 0, sizeof(sensor_point) * MEASURE_POINT_MAX);
     if (i2cEnable.get()) {
 #ifdef BME680
     printf("Wait 1 second...\r\n");
@@ -634,7 +642,7 @@ void setup()
       mHttp->on("/diagram", HTTP_GET, [](AsyncWebServerRequest *request){
         request->send(200, "application/json", diagramJson());
       });
-      mHttp->serveStatic("/", SPIFFS, "/").setDefaultFile("index.htm");
+      mHttp->serveStatic("/", SPIFFS, "/").setDefaultFile("standalone.htm");
       mHttp->begin();
       Homie.getLogger() << "Webserver started" << endl;
     } else {
