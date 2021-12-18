@@ -97,7 +97,7 @@ typedef struct s_point {
   long timestamp;
   float temp;
 #ifdef BME680
-  uint32_t gas_resistance;
+  uint32_t gas;
   float humidity;
 #endif
   float pressure;
@@ -325,16 +325,19 @@ String sensorAsJSON(void) {
   String buffer;
   StaticJsonDocument<500> doc;
 
-  doc["temp"] = String(bmx.readTemperature());
+  if (mMeasureIndex > 0) {
+    int lastIdx = mMeasureIndex - 1;
+    doc["temp"] = String(mMeasureSeries[lastIdx].temp);
 #ifdef BME680
-   doc["gas"] = String((bmx.gas_resistance / 1000.0));
-  doc["humidity"] = String(bmx.humidity);
+    doc["gas"] = String(mMeasureSeries[lastIdx].gas);
+    doc["humidity"] = String(mMeasureSeries[lastIdx].humidity);
 #endif
-  float atmospheric = bmx.readPressure() / 100.0F;
-  float altitude = 44330.0 * (1.0 - pow(atmospheric / SEALEVELPRESSURE_HPA, 0.1903));
-  doc["altitude"] = String(altitude);
-  doc["pressure"] = String(atmospheric);
-  doc["particle"] = String(mParticle_pM25);
+    float atmospheric = mMeasureSeries[lastIdx].pressure;
+    float altitude = 44330.0 * (1.0 - pow(atmospheric / SEALEVELPRESSURE_HPA, 0.1903));
+    doc["altitude"] = String(altitude);
+    doc["pressure"] = String(atmospheric);
+    doc["particle"] = String(mMeasureSeries[lastIdx].pm25);
+  }
   doc["cycle"] = String(mMeasureIndex);
   serializeJson(doc, buffer);
   return buffer;
@@ -406,6 +409,7 @@ String diagramJson(void) {
     bufferLabels += "\", \"" + String((now - mMeasureSeries[i].timestamp) / 1000) + "s";
     bufferDataTemp += "\", \"" + String(mMeasureSeries[i].temp);
     bufferDataPressure += "\", \"" + String(mMeasureSeries[i].pressure);
+    /* float altitude = 44330.0 * (1.0 - pow(atmospheric / SEALEVELPRESSURE_HPA, 0.1903)); */
   }
   if (mMeasureIndex > 0) {
     bufferLabels += "\" ]";
@@ -423,6 +427,7 @@ String diagramJson(void) {
   buffer += ", ";
   buffer += "{\n \"label\" : \"Pressure\",\n \"data\" : " + bufferDataPressure + ",\n \"borderColor\" : \"rgba(0,0,255,1)\" \n}";
   /* TODO, next ones ... */
+  
 
   buffer += "]\n }";
   return buffer;
@@ -471,9 +476,14 @@ void loopHandler()
     // FIXME: add the measured data into the big list
     if (mMeasureSeries != NULL) {
       mMeasureSeries[mMeasureIndex].timestamp = millis();
-      mMeasureSeries[mMeasureIndex].pm25 = millis() / 100; /* Dummy */
-      mMeasureSeries[mMeasureIndex].temp = random(10,30) * 1.0f; /* Dummy */
-      mMeasureSeries[mMeasureIndex].pressure = random(900,1050) * 1.0f; /* Dummy */
+      mMeasureSeries[mMeasureIndex].temp = bmx.readTemperature();
+#ifdef BME680
+      mMeasureSeries[mMeasureIndex].gas = (bmx.gas_resistance / 1000.0);
+      mMeasureSeries[mMeasureIndex].humidity = bmx.humidity;
+#endif
+      float atmospheric = bmx.readPressure() / 100.0F;
+      mMeasureSeries[mMeasureIndex].pressure = atmospheric;
+      mMeasureSeries[mMeasureIndex].pm25 = mParticle_pM25;
       mMeasureIndex++;
     }
 
