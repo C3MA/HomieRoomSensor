@@ -51,6 +51,8 @@
 #define BUTTON_MIN_ACTION_CYCLE 55U     /**< Minimum cycle to react on the button (e.g. 5 second) */
 #define BUTTON_CHECK_INTERVALL  100U     /**< Check every 100 ms the button state */
 
+#define PM_MAX                  1001    /**< According datasheet https://en.gassensor.com.cn/ParticulateMatterSensor/info_itemid_105.html 1000 is the maximum */
+
 #define LOG_TOPIC "log\0"
 #define MQTT_LEVEL_ERROR    1
 #define MQTT_LEVEL_WARNING  10
@@ -188,7 +190,12 @@ int getSensorData() {
   // Header und Prüfsumme checken
   if (serialRxBuf[0] == 0x16 && serialRxBuf[1] == 0x11 && serialRxBuf[2] == 0x0B /* && checksum == 0 */)
   {
-    return (serialRxBuf[5] << 8 | serialRxBuf[6]);
+    int pmValue = (serialRxBuf[5] << 8 | serialRxBuf[6]);
+    if (pmValue > PM_MAX) {
+      return (-1);
+    } else {
+      return pmValue;
+    }
   }
   else
   {
