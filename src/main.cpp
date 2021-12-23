@@ -234,8 +234,12 @@ void onHomieEvent(const HomieEvent &event)
       log(MQTT_LEVEL_INFO, F("I2C powersupply deactivated"), MQTT_LOG_I2CINIT);
     }
     digitalWrite(WITTY_RGB_B, LOW);
-    strip.fill(strip.Color(0,0,128));
-    strip.show();
+    /* Update LED only, if not sleeping */
+    if (deepsleep.get() <= 0) {
+      strip.fill(strip.Color(0,0,PERCENT2FACTOR(127, rgbDim)));
+      strip.show();
+    }
+
     if (mFailedI2Cinitialization) {
       log(MQTT_LEVEL_DEBUG, 
 #ifdef BME680
@@ -487,11 +491,14 @@ void setup()
         printf("Failed to initialize I2C bus\r\n");
       }
     }
-    strip.fill(strip.Color(0,0,0));
-    for (int i=0;i < (PIXEL_COUNT / 2); i++) {
-      strip.setPixelColor(0, strip.Color(0,0,128 * rgbDim.get()));
+    /* Nothing when sleeping */
+    if (deepsleep.get() <= 0) {
+      strip.fill(strip.Color(0,0,0));
+      for (int i=0;i < (PIXEL_COUNT / 2); i++) {
+        strip.setPixelColor(0, strip.Color(0,0,128 * rgbDim.get()));
+      }
+      strip.show();
     }
-    strip.show();
   } else {
     digitalWrite(WITTY_RGB_R, HIGH);
     strip.fill(strip.Color(128,0,0));
