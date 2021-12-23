@@ -84,6 +84,7 @@
 #define NODE_HUMIDITY                   "humidity"
 #define NODE_AMBIENT                    "ambient"
 #define NODE_BUTTON                     "button"
+#define SERIAL_RCEVBUF_MAX                80      /**< Maximum 80 characters can be received from the PM1006 sensor */
 /******************************************************************************
  *                                     TYPE DEFS
  ******************************************************************************/
@@ -145,12 +146,14 @@ Adafruit_BMP280 bmx; // connected via I2C
 Adafruit_NeoPixel strip(PIXEL_COUNT, GPIO_WS2812, NEO_GRB + NEO_KHZ800);
 
 // Variablen
-uint8_t serialRxBuf[80];
+uint8_t serialRxBuf[SERIAL_RCEVBUF_MAX];
 uint8_t rxBufIdx = 0;
-int spm25 = 0;
+int mParticle_pM25 = 0;
 int last = 0;
 unsigned int mButtonPressed = 0;
 bool mSomethingReceived = false;
+
+uint32_t      mMeasureIndex = 0;
 
 /******************************************************************************
  *                            LOCAL FUNCTIONS
@@ -222,8 +225,17 @@ void onHomieEvent(const HomieEvent &event)
     strip.fill(strip.Color(0,0,128));
     strip.show();
     if (mFailedI2Cinitialization) {
-      log(MQTT_LEVEL_DEBUG, F("Could not find a valid BME680 sensor, check wiring or "
-                          "try a different address!"), MQTT_LOG_I2CINIT);
+      log(MQTT_LEVEL_DEBUG, 
+#ifdef BME680
+    "Could not find a valid BME680 sensor, check wiring or try a different address!"
+#else
+#ifdef BMP280
+    "Could not find a valid BMP280 sensor, check wiring or try a different address!"
+#else
+  "no I2C sensor defined"
+#endif
+#endif
+      , MQTT_LOG_I2CINIT);
     } else {
       log(MQTT_LEVEL_INFO, F("BME680 sensor found"), MQTT_LOG_I2CINIT);
     }
@@ -248,7 +260,7 @@ void bmpPublishValues() {
   // Tell BME680 to begin measurement.
   unsigned long endTime = bmx.beginReading();
   if (endTime == 0) {
-    log(MQTT_LEVEL_ERROR, F("BME680 not accessible"), MQTT_LOG_I2READ);
+    log(MQTT_LEVEL_ERROR, "BMX not accessible", MQTT_LOG_I2READ);
     return;
   }
 #endif
@@ -288,13 +300,13 @@ void loopHandler()
 {
   static long lastRead = 0;
   if ((millis() - lastRead) > PM1006_MQTT_UPDATE) {
-    int pM25 = getSensorData();
-    if (pM25 >= 0) {
-      particle.setProperty(NODE_PARTICLE).send(String(pM25));
+    mParticle_pM25 = getSensorData();
+    if (mParticle_pM25 >= 0) {
+        particle.setProperty(NODE_PARTICLE).send(String(mParticle_pM25));
       if (!mSomethingReceived) {
-        if (pM25 < 35) {
+        if (mParticle_pM25 < 35) {
           strip.fill(strip.Color(0, PERCENT2FACTOR(127, rgbDim), 0)); /* green */
-        } else if (pM25 < 85) {
+        } else if (mParticle_pM25 < 85) {
           strip.fill(strip.Color(PERCENT2FACTOR(127, rgbDim), PERCENT2FACTOR(64, rgbDim), 0)); /* orange */
         } else {
           strip.fill(strip.Color(PERCENT2FACTOR(127, rgbDim), 0, 0)); /* red */
@@ -307,6 +319,8 @@ void loopHandler()
     if (i2cEnable.get() && (!mFailedI2Cinitialization)) {
       bmpPublishValues();
     }
+
+    mMeasureIndex++;
 
     /* Clean cycles buttons */
     if (mButtonPressed <= BUTTON_MIN_ACTION_CYCLE) {
@@ -383,7 +397,7 @@ void setup()
   rgbDim.setDefaultValue(100).setValidator([] (long candidate) {
     return (candidate > 1) && (candidate <= 200);
   });
-  memset(serialRxBuf, 0, 80);
+  memset(serialRxBuf, 0, SERIAL_RCEVBUF_MAX);
 
   pmSerial.begin(PM1006_BIT_RATE);
   Homie.setup();
@@ -447,6 +461,7 @@ void setup()
                       Adafruit_BMP280::FILTER_X16,      /* Filtering. */
                       Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
 #endif
+        printf("Sensor found on I2C bus\r\n");
       } else {
         printf("Failed to initialize I2C bus\r\n");
       }
@@ -488,8 +503,7 @@ void loop()
     digitalWrite(WITTY_RGB_R, LOW);
   }
 
-  if (mButtonPressed > BUTTON_MAX_CYCLE) {    
-    mButtonPressed = (BUTTON_MAX_CYCLE -1);
+  if (mButtonPressed > BUTTON_MAX_CYCLE) {
     if (SPIFFS.exists("/homie/config.json")) {
       strip.fill(strip.Color(0,PERCENT2FACTOR(127, rgbDim),0));
       strip.show();
