@@ -20,7 +20,7 @@
 #include <Adafruit_Sensor.h>
 #ifdef BME680
 #include "Adafruit_BME680.h"
-#else 
+#else
 #ifdef BMP280
 #include "Adafruit_BMP280.h"
 #else
@@ -51,6 +51,7 @@
 #define BUTTON_MIN_ACTION_CYCLE 55U     /**< Minimum cycle to react on the button (e.g. 5 second) */
 #define BUTTON_CHECK_INTERVALL  100U     /**< Check every 100 ms the button state */
 
+#define MIN_MEASURED_CYCLES     2
 #define PM_MAX                  1001    /**< According datasheet https://en.gassensor.com.cn/ParticulateMatterSensor/info_itemid_105.html 1000 is the maximum */
 
 #define LOG_TOPIC "log\0"
@@ -101,6 +102,7 @@ void log(int level, String message, int code);
 
 bool mConfigured = false;
 bool mConnected = false;
+bool mOTAactive = false;        /**< Stop sleeping, if OTA is running */
 bool mFailedI2Cinitialization = false;
 long mLastButtonAction = 0;
 
@@ -133,6 +135,7 @@ HomieSetting<bool> i2cEnable("i2c",
 );
 HomieSetting<bool> rgbTemp("rgbTemp", "Show temperature via red (>20 °C) and blue (< 20°C)");
 HomieSetting<long> rgbDim("rgbDim", "Factor (1 to 200%) of the status LEDs");
+HomieSetting<long> deepsleep("deepsleep", "Amount of seconds to sleep (default 0 - always online, maximum 4294 - 71 minutes)");
 
 static SoftwareSerial pmSerial(SENSOR_PM1006_RX, SENSOR_PM1006_TX);
 #ifdef BME680
@@ -214,6 +217,15 @@ void onHomieEvent(const HomieEvent &event)
 {
   switch (event.type)
   {
+    case HomieEventType::READY_TO_SLEEP:
+      if (mOTAactive) {
+        Homie.getLogger() << "Skip sleeping, as OTA was started" << endl;
+        return;
+      } else if (deepsleep.get() > 0) {
+        long sleepInSeconds = deepsleep.get();
+        Homie.doDeepSleep(sleepInSeconds * 1000000, RF_NO_CAL);
+      }
+    break;
   case HomieEventType::MQTT_READY:
     mConnected=true;
     digitalWrite(WITTY_RGB_R, LOW);
@@ -240,9 +252,8 @@ void onHomieEvent(const HomieEvent &event)
       log(MQTT_LEVEL_INFO, F("BME680 sensor found"), MQTT_LOG_I2CINIT);
     }
     break;
-  case HomieEventType::READY_TO_SLEEP:
-    break;
   case HomieEventType::OTA_STARTED:
+    mOTAactive = true;
     break;
   case HomieEventType::OTA_SUCCESSFUL:
     ESP.restart();
@@ -327,6 +338,13 @@ void loopHandler()
       buttonNode.setProperty(NODE_BUTTON).send("0");
     }
     lastRead = millis();
+
+    /* If nothing needs to be done, sleep and the time is ready for sleeping */
+    if (mMeasureIndex > MIN_MEASURED_CYCLES && (deepsleep.get() > 0) ) {
+      Homie.prepareToSleep();
+      delay(100);
+    }
+
   }
 
   /* if the user sees something via the LEDs, inform MQTT, too */
@@ -396,6 +414,9 @@ void setup()
   rgbTemp.setDefaultValue(false);
   rgbDim.setDefaultValue(100).setValidator([] (long candidate) {
     return (candidate > 1) && (candidate <= 200);
+  });
+  deepsleep.setDefaultValue(0).setValidator([] (long candidate) {
+      return ((candidate >= 0) && (candidate < 4294)); /* between 0 (deactivated) and 71 minutes */
   });
   memset(serialRxBuf, 0, SERIAL_RCEVBUF_MAX);
 
