@@ -356,11 +356,6 @@ void loopHandler()
     buttonNode.setProperty(NODE_BUTTON).send(String(mButtonPressed));
   }
 
-#ifdef VICTRON
-  // Read victron MPPT
-  mppt.loop();
-#endif
-
   // Feed the dog -> ESP stay alive
   ESP.wdtFeed();
 }
@@ -557,4 +552,9 @@ void loop()
       strip.show();
     }
   }
+
+#ifdef VICTRON
+  // Read victron MPPT
+  mppt.loop();
+#endif
 }
