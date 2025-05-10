@@ -25,6 +25,7 @@ namespace victron
         ~VictronComponent();
         void loop(void);
         void dump_config(void);
+        String toJson(void);
 
     private:
         void handle_value_();
