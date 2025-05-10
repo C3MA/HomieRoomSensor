@@ -9,6 +9,7 @@
  */
 
 #include "victron.h"
+#include "MqttLog.h"
 
 namespace victron {
 
@@ -29,28 +30,22 @@ namespace victron {
         this->state_ = initialstate;
     }
 
-    void VictronComponent::log(String tag, String message)
-    {
-        Serial << tag << " : " << message << endl;
-        Serial.flush();
-    }
-
     void VictronComponent::logTextSensor(String tag, String message, std::string text)
     {
-        Serial << tag << " : " << message << " : " << text.c_str() << endl;
-        Serial.flush();
+        String complete = message + " : " +  String(text.c_str());
+        log(MQTT_LEVEL_INFO, complete, MQTT_LOG_VICTRON);
     }
 
     void VictronComponent::logBinarySensor(String tag, String message, bool flag)
     {
-        Serial << tag << " : " << message << " : " << flag << endl;
-        Serial.flush();
+        String complete = message + " : " +  String(flag);
+        log(MQTT_LEVEL_INFO, complete, MQTT_LOG_VICTRON);
     }
 
     void VictronComponent::logSensor(String tag, String message, int number)
     {
-        Serial << tag << " : " << message << " : " << number << endl;
-        Serial.flush();
+        String complete = message + " : " +  String(number);
+        log(MQTT_LEVEL_INFO, complete, MQTT_LOG_VICTRON);
     }
 
     void VictronComponent::loop()
@@ -58,7 +53,7 @@ namespace victron {
         const uint32_t now = millis();
         if ((state_ > 0) && (now - last_transmission_ >= 200)) {
             // last transmission too long ago. Reset RX index.
-            log(TAG, "Last transmission too long ago");
+            log(MQTT_LEVEL_INFO, "Last transmission too long ago", MQTT_LOG_VICTRON);
             state_ = 0;
         }
 
@@ -226,7 +221,8 @@ namespace victron {
             return;
         }
 
-        Serial << TAG << " : Unhandled property:" << label_.c_str() << " : " << value_.c_str() << endl;
+        String message= "Unhandled property:" + String(label_.c_str()) + " : " +  String(value_.c_str());
+        log(MQTT_LEVEL_ERROR, message, MQTT_LOG_VICTRON);
     }
 
 
@@ -237,7 +233,6 @@ namespace victron {
             return; /* No data -> no log */
         }
 
-        log(TAG, "Victron:");
         logBinarySensor("  ", "Load state", load_state_binary_sensor_);
         logSensor("  ", "Max Power Yesterday", max_power_yesterday_sensor_);
         logSensor("  ", "Max Power Today", max_power_today_sensor_);

@@ -15,6 +15,7 @@
 #include <Homie.h>
 #include <SoftwareSerial.h>
 #include "HomieSettings.h"
+#include "MqttLog.h"
 #include <Adafruit_NeoPixel.h>
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
@@ -57,25 +58,7 @@
 #define MIN_MEASURED_CYCLES     2
 #define PM_MAX                  1001    /**< According datasheet https://en.gassensor.com.cn/ParticulateMatterSensor/info_itemid_105.html 1000 is the maximum */
 
-#define LOG_TOPIC "log\0"
-#define MQTT_LEVEL_ERROR    1
-#define MQTT_LEVEL_WARNING  10
-#define MQTT_LEVEL_INFO     20
-#define MQTT_LEVEL_DEBUG    90
-
-#define MQTT_LOG_PM1006     10
-#define MQTT_LOG_I2CINIT    100
-#define MQTT_LOG_I2READ     101
-#define MQTT_LOG_RGB        200
-
 #define TEMPBORDER        20
-
-#define getTopic(test, topic)                                                                                                                 \
-  char *topic = new char[strlen(Homie.getConfiguration().mqtt.baseTopic) + strlen(Homie.getConfiguration().deviceId) + 1 + strlen(test) + 1]; \
-  strcpy(topic, Homie.getConfiguration().mqtt.baseTopic);                                                                                     \
-  strcat(topic, Homie.getConfiguration().deviceId);                                                                                           \
-  strcat(topic, "/");                                                                                                                         \
-  strcat(topic, test);         
 
 #define PERCENT2FACTOR(b, a)               ((b * a.get()) / 100)
 
@@ -106,7 +89,7 @@ void log(int level, String message, int code);
  ******************************************************************************/
 
 bool mConfigured = false;
-bool mConnected = false;
+
 bool mOTAactive = false;        /**< Stop sleeping, if OTA is running */
 bool mFailedI2Cinitialization = false;
 long mLastButtonAction = 0;
@@ -574,23 +557,4 @@ void loop()
       strip.show();
     }
   }
-}
-
-
-void log(int level, String message, int statusCode)
-{
-  String buffer;
-  StaticJsonDocument<200> doc;
-  doc["level"] = level;
-  doc["message"] = message;
-  doc["statusCode"] = statusCode;
-  serializeJson(doc, buffer);
-  if (mConnected)
-  {
-    getTopic(LOG_TOPIC, logTopic)
-
-    Homie.getMqttClient().publish(logTopic, 2, false, buffer.c_str());
-    delete logTopic;
-  }
-  Homie.getLogger() << (level) << "@" << (statusCode) << " " << (message) << endl;
 }

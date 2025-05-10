@@ -29,7 +29,6 @@ namespace victron
 
     private:
         void handle_value_();
-        void log(String tag, String message);
         void logTextSensor(String tag, String message, std::string text);
         void logBinarySensor(String tag, String message, bool flag);
         void logSensor(String tag, String message, int number);
