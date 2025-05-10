@@ -27,6 +27,10 @@ namespace victron
         void dump_config(void);
         String toJson(void);
 
+        int getBatteryVoltage() {
+            return battery_voltage_sensor_;
+        }
+
     private:
         void handle_value_();
         void logTextSensor(String tag, String message, std::string text);

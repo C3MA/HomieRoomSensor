@@ -73,6 +73,7 @@
 #define NODE_BUTTON                     "button"
 #define NODE_MPPT                       "mppt"
 #define NODE_SOLAR                      "solar"
+#define NODE_SOLAR_BATTERY              "battery"
 #define SERIAL_RCEVBUF_MAX                80      /**< Maximum 80 characters can be received from the PM1006 sensor */
 /******************************************************************************
  *                                     TYPE DEFS
@@ -348,6 +349,8 @@ void loopHandler()
 #ifdef VICTRON
     mppt.dump_config();
     mpptNode.setProperty(NODE_MPPT).send(mppt.toJson());
+    solarNode.setProperty(NODE_SOLAR_BATTERY).send(String(mppt.getBatteryVoltage()));
+    
 #endif
   }
 
@@ -456,6 +459,9 @@ void setup()
                               .setDatatype("json");
   solarNode.advertise(NODE_SOLAR).setName("Solar")
                             .setDatatype("integer");
+
+  solarNode.advertise(NODE_SOLAR_BATTERY).setName("Solar")
+                            .setDatatype("integer").setUnit("mV");
 #endif
   strip.begin();
 
