@@ -574,7 +574,6 @@ namespace victron {
         if (label_ == "CS") {
             value = atoi(value_.c_str());  // NOLINT(cert-err34-c)
             charging_mode_id_sensor_ = value;
-            charging_mode_text_sensor_ = charging_mode_text(value);
             return;
         }
 
@@ -586,7 +585,7 @@ namespace victron {
 
 
         if (label_ == "PID") {
-            device_type_text_sensor_ = device_type_text(strtol(value_.c_str(), nullptr, 0));
+            device_type_text_sensor_ = strtol(value_.c_str(), nullptr, 0);
             return;
         }
 
@@ -603,7 +602,6 @@ namespace victron {
         if (label_ == "MPPT") {
             value = atoi(value_.c_str());  // NOLINT(cert-err34-c)
             tracking_mode_id_sensor_ = value;
-            tracking_mode_text_sensor_ = tracking_mode_text(value);
             return;
         }
 

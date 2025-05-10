@@ -38,7 +38,7 @@ namespace victron
         uint32_t throttle_;
 
 
-        /* All Settings */1
+        /* All Settings */
         int max_power_yesterday_sensor_ = 0;
         int max_power_today_sensor_ = 0;
         float yield_total_sensor_ = 0;
@@ -59,11 +59,9 @@ namespace victron
 
         std::string alarm_condition_active_text_sensor_;
 
-        std::string charging_mode_text_sensor_;
         std::string error_text_sensor_;
-        std::string tracking_mode_text_sensor_;
         std::string firmware_version_text_sensor_;
-        std::string device_type_text_sensor_;
+        long device_type_text_sensor_;
         std::string serial_number_text_sensor_;
 
     };
