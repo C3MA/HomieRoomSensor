@@ -26,7 +26,7 @@ namespace victron {
             return "Unknown";
         }
     }
-
+ 
     std::string error_code_text(int value) {
         switch (value) {
             case 0:
@@ -115,7 +115,7 @@ namespace victron {
 
 
 
-    std::string device_type_text(int value)
+    std::string device_type_text(long value)
     {
         switch (value) {
             case 0x203:
@@ -431,6 +431,24 @@ namespace victron {
         Serial.flush();
     }
 
+    void VictronComponent::logTextSensor(String tag, String message, std::string text)
+    {
+        Serial << tag << " : " << message << " : " << text.c_str() << endl;
+        Serial.flush();
+    }
+
+    void VictronComponent::logBinarySensor(String tag, String message, bool flag)
+    {
+        Serial << tag << " : " << message << " : " << flag << endl;
+        Serial.flush();
+    }
+
+    void VictronComponent::logSensor(String tag, String message, int number)
+    {
+        Serial << tag << " : " << message << " : " << number << endl;
+        Serial.flush();
+    }
+
     void VictronComponent::loop()
     {
         const uint32_t now = millis();
@@ -567,7 +585,6 @@ namespace victron {
         if (label_ == "ERR") {
             value = atoi(value_.c_str());  // NOLINT(cert-err34-c)
             error_code_sensor_ =  value;
-            error_text_sensor_ =  error_code_text(value);
             return;
         }
 
@@ -606,5 +623,37 @@ namespace victron {
         }
 
         Serial << TAG << " : Unhandled property:" << label_.c_str() << " : " << value_.c_str() << endl;
+    }
+
+
+    void VictronComponent::dump_config(void)
+    {
+        if (this->last_publish_ <= 0)
+        {
+            return; /* No data -> no log */
+        }
+
+        log(TAG, "Victron:");
+        logBinarySensor("  ", "Load state", load_state_binary_sensor_);
+        logSensor("  ", "Max Power Yesterday", max_power_yesterday_sensor_);
+        logSensor("  ", "Max Power Today", max_power_today_sensor_);
+        logSensor("  ", "Yield Total", yield_total_sensor_);
+        logSensor("  ", "Yield Yesterday", yield_yesterday_sensor_);
+        logSensor("  ", "Yield Today", yield_today_sensor_);
+        logSensor("  ", "Panel Voltage", panel_voltage_sensor_);
+        logSensor("  ", "Panel Power", panel_power_sensor_);
+        logSensor("  ", "Battery Voltage", battery_voltage_sensor_);
+        logSensor("  ", "Battery Current", battery_current_sensor_);
+        logSensor("  ", "Load Current", load_current_sensor_);
+        logSensor("  ", "Day Number", day_number_sensor_);
+        logSensor("  ", "Charging Mode ID", charging_mode_id_sensor_);
+        logSensor("  ", "Error Code", error_code_sensor_);
+        logSensor("  ", "Tracking Mode ID", tracking_mode_id_sensor_);
+        logTextSensor("  ", "Error Text",  error_code_text(error_code_sensor_));
+        logTextSensor("  ", "Tracking Mode", tracking_mode_text(tracking_mode_id_sensor_));
+        logTextSensor("  ", "Charging Mode", charging_mode_text(charging_mode_id_sensor_));
+        logTextSensor("  ", "Firmware Version", firmware_version_text_sensor_);
+        logTextSensor("  ", "Device Type", device_type_text(device_type_text_sensor_));
+        logTextSensor("  ", "Alarm Condition Active", alarm_condition_active_text_sensor_);   
     }
 }

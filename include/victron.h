@@ -24,10 +24,15 @@ namespace victron
         VictronComponent();
         ~VictronComponent();
         void loop(void);
+        void dump_config(void);
 
     private:
         void handle_value_();
         void log(String tag, String message);
+        void logTextSensor(String tag, String message, std::string text);
+        void logBinarySensor(String tag, String message, bool flag);
+        void logSensor(String tag, String message, int number);
+
         /* States during serial parsing */
         bool publishing_;
         int state_;
@@ -59,7 +64,6 @@ namespace victron
 
         std::string alarm_condition_active_text_sensor_;
 
-        std::string error_text_sensor_;
         std::string firmware_version_text_sensor_;
         long device_type_text_sensor_;
         std::string serial_number_text_sensor_;

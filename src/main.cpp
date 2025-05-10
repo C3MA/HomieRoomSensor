@@ -352,6 +352,7 @@ void loopHandler()
       delay(100);
     }
 
+    mppt.dump_config();
   }
 
   /* if the user sees something via the LEDs, inform MQTT, too */
