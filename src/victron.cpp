@@ -14,28 +14,7 @@ namespace victron {
 
     static const char *const TAG = "victron";
 
-    static const uint8_t OFF_REASONS_SIZE = 16;
-    static const char *const OFF_REASONS[OFF_REASONS_SIZE] = {
-        "No input power",                       // 0000 0000 0000 0001
-        "Switched off (power switch)",          // 0000 0000 0000 0010
-        "Switched off (device mode register)",  // 0000 0000 0000 0100
-        "Remote input",                         // 0000 0000 0000 1000
-        "Protection active",                    // 0000 0000 0001 0000
-        "Paygo",                                // 0000 0000 0010 0000
-        "BMS",                                  // 0000 0000 0100 0000
-        "Engine shutdown detection",            // 0000 0000 1000 0000
-        "Analysing input voltage",              // 0000 0001 0000 0000
-        "Unknown: Bit 10",                      // 0000 0010 0000 0000
-        "Unknown: Bit 11",                      // 0000 0100 0000 0000
-        "Unknown: Bit 12",                      // 0000 1000 0000 0000
-        "Unknown: Bit 13",                      // 0001 0000 0000 0000
-        "Unknown: Bit 14",                      // 0010 0000 0000 0000
-        "Unknown: Bit 15",                      // 0100 0000 0000 0000
-        "Unknown: Bit 16",                      // 1000 0000 0000 0000
-    };
-
-
-    static std::string tracking_mode_text(int value) {
+    std::string tracking_mode_text(int value) {
         switch (value) {
             case 0:
             return "Off";
@@ -48,7 +27,7 @@ namespace victron {
         }
     }
 
-    static std::string error_code_text(int value) {
+    std::string error_code_text(int value) {
         switch (value) {
             case 0:
             return "No error";
@@ -97,7 +76,7 @@ namespace victron {
 
 
 
-    static std::string charging_mode_text(int value) {
+    std::string charging_mode_text(int value) {
         switch (value) {
             case 0:
             return "Off";
@@ -136,7 +115,7 @@ namespace victron {
 
 
 
-    static std::string device_type_text(int value)
+    std::string device_type_text(int value)
     {
         switch (value) {
             case 0x203:
