@@ -18,6 +18,7 @@
 #include <Adafruit_NeoPixel.h>
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
+#include <victron.h>
 #ifdef BME680
 #include "Adafruit_BME680.h"
 #else
@@ -147,6 +148,8 @@ Adafruit_BMP280 bmx; // connected via I2C
 #endif
 
 Adafruit_NeoPixel strip(PIXEL_COUNT, GPIO_WS2812, NEO_GRB + NEO_KHZ800);
+
+victron::VictronComponent mppt(0);
 
 // Variablen
 uint8_t serialRxBuf[SERIAL_RCEVBUF_MAX];
@@ -356,6 +359,9 @@ void loopHandler()
     buttonNode.setProperty(NODE_BUTTON).send(String(mButtonPressed));
   }
 
+  // Read victron MPPT
+  mppt.loop();
+
   // Feed the dog -> ESP stay alive
   ESP.wdtFeed();
 }
@@ -402,8 +408,9 @@ bool ledHandler(const HomieRange& range, const String& value) {
 void setup()
 { 
   SPIFFS.begin();
-  Serial.begin(115200);
+  Serial.begin(SERIAL_BAUDRATE);
   Serial.setTimeout(2000);
+
   pinMode(WITTY_RGB_R, OUTPUT);
   pinMode(WITTY_RGB_G, OUTPUT);
   pinMode(WITTY_RGB_B, OUTPUT);
