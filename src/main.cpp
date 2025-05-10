@@ -18,7 +18,9 @@
 #include <Adafruit_NeoPixel.h>
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
+#ifdef VICTRON
 #include <victron.h>
+#endif
 #ifdef BME680
 #include "Adafruit_BME680.h"
 #else
@@ -86,6 +88,8 @@
 #define NODE_HUMIDITY                   "humidity"
 #define NODE_AMBIENT                    "ambient"
 #define NODE_BUTTON                     "button"
+#define NODE_MPPT                       "mppt"
+#define NODE_SOLAR                      "solar"
 #define SERIAL_RCEVBUF_MAX                80      /**< Maximum 80 characters can be received from the PM1006 sensor */
 /******************************************************************************
  *                                     TYPE DEFS
@@ -118,6 +122,11 @@ HomieNode humidityNode(NODE_HUMIDITY, "Humidity", "number");
 #endif
 HomieNode buttonNode(NODE_BUTTON, "Button", "number");
 
+#ifdef VICTRON
+HomieNode mpptNode(NODE_MPPT, "MPPT", "json");
+HomieNode solarNode(NODE_SOLAR, "Solar", "number");
+#endif
+
 /****************************** Output control ***********************/
 HomieNode ledStripNode /* to rule them all */("led", "RGB led", "color");
 
@@ -149,7 +158,9 @@ Adafruit_BMP280 bmx; // connected via I2C
 
 Adafruit_NeoPixel strip(PIXEL_COUNT, GPIO_WS2812, NEO_GRB + NEO_KHZ800);
 
+#ifdef VICTRON
 victron::VictronComponent mppt(0);
+#endif
 
 // Variablen
 uint8_t serialRxBuf[SERIAL_RCEVBUF_MAX];
@@ -351,8 +362,10 @@ void loopHandler()
       Homie.prepareToSleep();
       delay(100);
     }
-
+#ifdef VICTRON
     mppt.dump_config();
+    mpptNode.setProperty(NODE_MPPT).send(mppt.toJson());
+#endif
   }
 
   /* if the user sees something via the LEDs, inform MQTT, too */
@@ -360,8 +373,10 @@ void loopHandler()
     buttonNode.setProperty(NODE_BUTTON).send(String(mButtonPressed));
   }
 
+#ifdef VICTRON
   // Read victron MPPT
   mppt.loop();
+#endif
 
   // Feed the dog -> ESP stay alive
   ESP.wdtFeed();
@@ -458,7 +473,12 @@ void setup()
                             .settable(ledHandler);
   buttonNode.advertise(NODE_BUTTON).setName("Button pressed")
                             .setDatatype("integer");
-
+#if VICTRON
+  mpptNode.advertise(NODE_MPPT).setName("MPPT")
+                              .setDatatype("json");
+  solarNode.advertise(NODE_SOLAR).setName("Solar")
+                            .setDatatype("integer");
+#endif
   strip.begin();
 
   mConfigured = Homie.isConfigured();
