@@ -23,6 +23,7 @@ Upload this new generated filesystem with:
 Can be found at ```~/.platformio/penv/bin/pio```
 
 # Hardware
+## Core
 ESP8266 version ESP12 was used.
 
 The prototype was based on the Witty board
@@ -47,14 +48,32 @@ The following pins are used:
 * GPIO13 VCC of I2C (3.3 V)
 * GPIO14 I2C clock
 * GPIO5  I2C data pin
+* RXD    Victron MPPT
+
+## Victron
+
+An *ADUM 1201* should be used for galvanic isolation.
+The following wiring will be setup:
+```
+Ve.Direct  | Purpose | connect | ADUM1201 #2 | ADUM1201 #1 | connect |  ESP8266
+1          |  GND    |   <->   | GND2        | GND1        |   <->   |  GND 
+2          |  RX     |   <->   | VOB         | VIB         |         |  
+3          |  TX     |   <->   | VIA         | VOA         |   <->   |  RX
+4          |  5V     |   <->   | VDD2        | VDD1        |   <->   |  3V3
+```
 
 # Bill of materials
+## Core
 * IKEA Vindriktning
 * ESP8266 (e.g. Witty board)
 * BMP280 sensor
 * some wire
 
+## Victron
+* ADUM 1201
+
 # Sources
 For the Witty board
 * [https://github.com/amkuipers/witty Witty pinout]
 * [https://arduino.ua/products_pictures/large_AOC361-5.jpg Schematics]
+* [https://github.com/KinDR007/VictronMPPT-ESPHOME/ Victron MPPT ESP8266 Library]
