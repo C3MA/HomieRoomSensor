@@ -73,7 +73,9 @@
 #define NODE_BUTTON                     "button"
 #define NODE_MPPT                       "mppt"
 #define NODE_SOLAR                      "solar"
-#define NODE_SOLAR_BATTERY              "battery"
+#define NODE_SOLAR_BATTERYVOLT          "batteryV"
+#define NODE_SOLAR_PANELPOWER           "panelP"
+#define NODE_SOLAR_PANELVOLT            "panelV"
 #define SERIAL_RCEVBUF_MAX                80      /**< Maximum 80 characters can be received from the PM1006 sensor */
 /******************************************************************************
  *                                     TYPE DEFS
@@ -342,15 +344,21 @@ void loopHandler()
     lastRead = millis();
 
     /* If nothing needs to be done, sleep and the time is ready for sleeping */
-    if (mMeasureIndex > MIN_MEASURED_CYCLES && (deepsleep.get() > 0) ) {
+    if ((mMeasureIndex > MIN_MEASURED_CYCLES) && (deepsleep.get() > 0) 
+#ifdef VICTRON
+    && (mppt.hasData())
+#endif
+    ) {
       Homie.prepareToSleep();
       delay(100);
     }
 #ifdef VICTRON
     mppt.dump_config();
     mpptNode.setProperty(NODE_MPPT).send(mppt.toJson());
-    solarNode.setProperty(NODE_SOLAR_BATTERY).send(String(mppt.getBatteryVoltage()));
-    
+    solarNode.setProperty(NODE_SOLAR_BATTERYVOLT).send(String(mppt.getBatteryVoltage()));
+    solarNode.setProperty(NODE_SOLAR_PANELVOLT).send(String(mppt.getPanelVoltage()));
+    solarNode.setProperty(NODE_SOLAR_PANELPOWER).send(String(mppt.getPanelPower()));
+
 #endif
   }
 
@@ -460,7 +468,11 @@ void setup()
   solarNode.advertise(NODE_SOLAR).setName("Solar")
                             .setDatatype("integer");
 
-  solarNode.advertise(NODE_SOLAR_BATTERY).setName("Solar")
+  solarNode.advertise(NODE_SOLAR_BATTERYVOLT).setName("Solar")
+                            .setDatatype("integer").setUnit("mV");
+  solarNode.advertise(NODE_SOLAR_PANELPOWER).setName("Panel")
+                            .setDatatype("integer").setUnit("W");
+  solarNode.advertise(NODE_SOLAR_PANELVOLT).setName("Panel")
                             .setDatatype("integer").setUnit("mV");
 #endif
   strip.begin();

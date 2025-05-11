@@ -31,6 +31,18 @@ namespace victron
             return battery_voltage_sensor_;
         }
 
+        int getPanelVoltage() {
+            return panel_voltage_sensor_;
+        }
+
+        int getPanelPower() {
+            return panel_power_sensor_;
+        }
+
+        bool hasData() {
+            return (battery_voltage_sensor_ > 0);
+        }
+
     private:
         void handle_value_();
         void logTextSensor(String tag, String message, std::string text);
