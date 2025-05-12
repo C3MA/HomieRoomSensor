@@ -226,37 +226,6 @@ namespace victron {
         log(MQTT_LEVEL_ERROR, message, MQTT_LOG_VICTRON);
     }
 
-
-    void VictronComponent::dump_config(void)
-    {
-        if (this->last_publish_ <= 0)
-        {
-            return; /* No data -> no log */
-        }
-
-        logBinarySensor("  ", "Load state", load_state_binary_sensor_);
-        logSensor("  ", "Max Power Yesterday", max_power_yesterday_sensor_);
-        logSensor("  ", "Max Power Today", max_power_today_sensor_);
-        logSensor("  ", "Yield Total", yield_total_sensor_);
-        logSensor("  ", "Yield Yesterday", yield_yesterday_sensor_);
-        logSensor("  ", "Yield Today", yield_today_sensor_);
-        logSensor("  ", "Panel Voltage", panel_voltage_sensor_);
-        logSensor("  ", "Panel Power", panel_power_sensor_);
-        logSensor("  ", "Battery Voltage", battery_voltage_sensor_);
-        logSensor("  ", "Battery Current", battery_current_sensor_);
-        logSensor("  ", "Load Current", load_current_sensor_);
-        logSensor("  ", "Day Number", day_number_sensor_);
-        logSensor("  ", "Charging Mode ID", charging_mode_id_sensor_);
-        logSensor("  ", "Error Code", error_code_sensor_);
-        logSensor("  ", "Tracking Mode ID", tracking_mode_id_sensor_);
-        logTextSensor("  ", "Firmware Version", firmware_version_text_sensor_);
-        logTextSensor("  ", "Alarm Condition Active", alarm_condition_active_text_sensor_);
-        logTextSensor("  ", "Error Text",  error_code_text(error_code_sensor_));
-        logTextSensor("  ", "Tracking Mode", tracking_mode_text(tracking_mode_id_sensor_));
-        logTextSensor("  ", "Charging Mode", charging_mode_text(charging_mode_id_sensor_));
-        logTextSensor("  ", "Device Type", device_type_text(device_type_text_sensor_));
-    }
-
     String VictronComponent::toJson(void)
     {
         String buffer;
@@ -266,29 +235,37 @@ namespace victron {
         }
         else
         {
-            StaticJsonDocument<200> doc;
-            //FIXME doc["LoadState"] = load_state_binary_sensor_;
-            // doc["MaxPowerYesterday"] = max_power_yesterday_sensor_;
-            // doc["MaxPowerToday"] = max_power_today_sensor_;
-            // doc["YieldTotal"] = yield_total_sensor_;
-            // doc["YieldYesterday"] = yield_yesterday_sensor_;
-            // doc["YieldToday"] = yield_today_sensor_;
-            // doc["PanelVoltage"] = panel_voltage_sensor_;
-            // doc["PanelPower"] = panel_power_sensor_;
-            doc["BatVoltage"] = battery_voltage_sensor_;
-            // doc["BatCurrent"] = battery_current_sensor_;
-            // doc["LoadCurrent"] = load_current_sensor_;
-            // doc["DayNumber"] = day_number_sensor_;
-            // doc["ChargingModeID"] = charging_mode_id_sensor_;
-            // doc["ErrorCode"] = error_code_sensor_;
-            // doc["TrackingModeID"] = tracking_mode_id_sensor_;
-            //FIXME doc["ErrorText"] =  error_code_text(error_code_sensor_).c_str();
-            //FIXME doc["TrackingMode"] = tracking_mode_text(tracking_mode_id_sensor_).c_str();
-            //FIXME doc["ChargingMode"] = charging_mode_text(charging_mode_id_sensor_).c_str();
-            //FIXME doc["FirmwareVersion"] = firmware_version_text_sensor_.c_str();
-            //FIXME doc["DeviceType"] = device_type_text(device_type_text_sensor_).c_str();
-            //FIXME doc["AlarmConditionActive"] = alarm_condition_active_text_sensor_.c_str();
-            serializeJson(doc, buffer);
+            buffer += "{ ";
+            buffer += "\"load\":" + String(load_state_binary_sensor_) + ",\n";
+            buffer += "\"MaxPower\":{\n";
+            buffer += "\"yesterday\":" + String(max_power_yesterday_sensor_) + ",\n";
+            buffer += "\"today\":" + String(max_power_today_sensor_) + "\n";
+            buffer += "},\n";
+            buffer += "\"Yield\":{\n";
+            buffer += "\"Total\":" + String(yield_total_sensor_) + ",\n";
+            buffer += "\"Yesterday\":" + String(yield_yesterday_sensor_) + ",\n";
+            buffer += "\"Today\":" + String(yield_today_sensor_) + "\n";
+            buffer += "},\n";
+            buffer += "\"Panel\":{\n";
+            buffer += "\"Voltage\":" + String(panel_voltage_sensor_) + ",\n";
+            buffer += "\"Power\":" + String(panel_power_sensor_) + "\n";
+            buffer += "},\n";
+            buffer += "\"Bat\":{\n";
+            buffer += "\"Voltage\":" + String(battery_voltage_sensor_) + ",\n";
+            buffer += "\"Current\":" + String(battery_current_sensor_) + "\n";
+            buffer += "},\n";
+            buffer += "\"LoadCurrent\":" + String(load_current_sensor_) + ",\n";
+            buffer += "\"DayNumber\":" + String(day_number_sensor_) + ",\n";
+            buffer += "\"ChargingModeID\":" + String(charging_mode_id_sensor_) + ",\n";
+            buffer += "\"ErrorCode\":" + String(error_code_sensor_) + ",\n";
+            buffer += "\"TrackingModeID\":" + String(tracking_mode_id_sensor_) + ",\n";
+            buffer += "\"ErrorText\": \"" + String(error_code_text(error_code_sensor_).c_str()) + "\",\n";
+            buffer += "\"TrackingMode\": \"" + String(tracking_mode_text(tracking_mode_id_sensor_).c_str()) + "\",\n";
+            buffer += "\"ChargingMode\": \"" + String(charging_mode_text(charging_mode_id_sensor_).c_str()) + "\",\n";
+            buffer += "\"FirmwareVersion\": \"" + String(firmware_version_text_sensor_.c_str()) + "\",\n";
+            buffer += "\"DeviceType\": \"" + String(device_type_text(device_type_text_sensor_).c_str() ) + "\",\n";
+            buffer += "\"AlarmConditionActive\": \"" + String(alarm_condition_active_text_sensor_.c_str()) + "\"\n";
+            buffer += "}";
             return buffer;
         }
     }

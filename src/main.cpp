@@ -354,7 +354,6 @@ void loopHandler()
       delay(100);
     }
 #ifdef VICTRON
-    mppt.dump_config();
     mpptNode.setProperty(NODE_MPPT).send(mppt.toJson());
     solarNode.setProperty(NODE_SOLAR_BATTERYVOLT).send(String(mppt.getBatteryVoltage()));
     solarNode.setProperty(NODE_SOLAR_PANELVOLT).send(String(mppt.getPanelVoltage()));

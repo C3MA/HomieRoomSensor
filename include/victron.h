@@ -24,7 +24,6 @@ namespace victron
         VictronComponent();
         ~VictronComponent();
         void loop(void);
-        void dump_config(void);
         String toJson(void);
 
         int getBatteryVoltage() {
