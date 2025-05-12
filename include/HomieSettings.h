@@ -13,7 +13,7 @@
 #define HOMIE_SETTINGS
 
 #define HOMIE_FIRMWARE_NAME     "RoomSensor"
-#define HOMIE_FIRMWARE_VERSION  "2.4.2"
+#define HOMIE_FIRMWARE_VERSION  "2.4.3"
 
 
 #define SERIAL_BAUDRATE 19200

@@ -145,6 +145,7 @@ Adafruit_BMP280 bmx; // connected via I2C
 Adafruit_NeoPixel strip(PIXEL_COUNT, GPIO_WS2812, NEO_GRB + NEO_KHZ800);
 
 #ifdef VICTRON
+HomieSetting<bool> deepsleepMppt("dsleepMppt", "Deep sleep only after MPPT comminication (default 0 / false: sleep without any info from Victron)");
 victron::VictronComponent mppt(0);
 #endif
 
@@ -346,7 +347,7 @@ void loopHandler()
     /* If nothing needs to be done, sleep and the time is ready for sleeping */
     if ((mMeasureIndex > MIN_MEASURED_CYCLES) && (deepsleep.get() > 0) 
 #ifdef VICTRON
-    && (mppt.hasData())
+    && (mppt.hasData() || (deepsleepMppt.get() == 0))
 #endif
     ) {
       Homie.prepareToSleep();
@@ -427,7 +428,11 @@ void setup()
   Homie.setLoopFunction(loopHandler);
   Homie.onEvent(onHomieEvent);
   i2cEnable.setDefaultValue(false);
+  deepsleepMppt.setDefaultValue(false);
+#if VICTRON
   rgbTemp.setDefaultValue(false);
+#endif
+
   rgbDim.setDefaultValue(100).setValidator([] (long candidate) {
     return (candidate > 1) && (candidate <= 200);
   });
