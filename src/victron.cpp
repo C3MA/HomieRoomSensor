@@ -10,6 +10,7 @@
 
 #include "victron.h"
 #include "MqttLog.h"
+#include "VictronTexts.h"
 
 namespace victron {
 
@@ -249,18 +250,11 @@ namespace victron {
         logSensor("  ", "Error Code", error_code_sensor_);
         logSensor("  ", "Tracking Mode ID", tracking_mode_id_sensor_);
         logTextSensor("  ", "Firmware Version", firmware_version_text_sensor_);
-        logTextSensor("  ", "Alarm Condition Active", alarm_condition_active_text_sensor_);   
-        /** 
-         * Linking .pio/build/nodemcuv2/firmware.elf
-            .pio/build/nodemcuv2/libFrameworkArduino.a(core_esp8266_postmortem.cpp.o): in function `__wrap_system_restart_local':
-            core_esp8266_postmortem.cpp:(.text.__wrap_system_restart_local+0x2): dangerous relocation: j: cannot encode: (.text.postmortem_report+0x88)
-
-
+        logTextSensor("  ", "Alarm Condition Active", alarm_condition_active_text_sensor_);
         logTextSensor("  ", "Error Text",  error_code_text(error_code_sensor_));
         logTextSensor("  ", "Tracking Mode", tracking_mode_text(tracking_mode_id_sensor_));
         logTextSensor("  ", "Charging Mode", charging_mode_text(charging_mode_id_sensor_));
         logTextSensor("  ", "Device Type", device_type_text(device_type_text_sensor_));
-         */
     }
 
     String VictronComponent::toJson(void)
