@@ -40,7 +40,8 @@ with serial.Serial(serialDevice, 19200, timeout=1)  as ser:
         if (updateSerial):
             lastUpdate=int(time.time())
             # Send the status string
-            outStr="SER#\tHQ2202K3VD9\nV\t{0:d}\nI\t{1:d}\nVPV\t{2:d}\nPPV\t{3:d}\nChecksum	f\r\n".format(battery_volt, battery_current, panel_volt, panel_power)
+            
+            outStr="FW\t159\nSER#\tHQ2202K3VD9\nV\t{0:d}\nI\t{1:d}\nVPV\t{2:d}\nPPV\t{3:d}\nChecksum	f\r\n".format(battery_volt, battery_current, panel_volt, panel_power)
             # Other values
             # CS\t{4:d}\nMPPT\t{5:d}\nERR\t{6:d}\nLOAD\t{7}\nIL\t{8:d}\nH19\t{9:d}\nH20\t{10:d}\nH21\t{11:d}\nH22\t{12:d}\nH23\t{13:d}\nHSDS\t{14:d}\n
 
