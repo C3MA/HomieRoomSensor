@@ -16,11 +16,6 @@ namespace victron {
 
     static const char *const TAG = "victron";
 
-    VictronComponent::VictronComponent()
-    {
-        this->state_ = 0;
-    }
-
     VictronComponent::~VictronComponent()
     {
 
@@ -86,26 +81,27 @@ namespace victron {
             }
             continue;
             }
-            if (state_ == 2) {
-            if (label_ == "Checksum") {
+            if (state_ == 2)
+            {
+              if (label_ == "Checksum") {
                 state_ = 0;
                 // The checksum is used as end of frame indicator
-                if (now - this->last_publish_ >= this->throttle_) {
+                if ((now - this->last_publish_) >= VICTRON_THROTTLE) {
                 this->last_publish_ = now;
                 this->publishing_ = true;
                 } else {
                 this->publishing_ = false;
                 }
                 continue;
-            }
-            if (c == '\r' || c == '\n') {
+              }
+              if (c == '\r' || c == '\n') {
                 if (this->publishing_) {
                 handle_value_();
                 }
                 state_ = 0;
-            } else {
+              } else {
                 value_.push_back(c);
-            }
+              }
             }
             // Discard ve.direct hex frame
             if (state_ == 3) {
@@ -231,11 +227,18 @@ namespace victron {
         String buffer;
         if (this->last_publish_ <= 0)
         {
+            buffer += "{ ";
+            buffer += "\"mode\": \"nodata\",\n";
+            buffer += "\"state\":" + String(state_) + ",\n";
+            buffer += "\"transmission\":" + String(last_transmission_) + ",\n";
+            buffer += "\"publish\":" + String(last_publish_) + "\n";
+            buffer += "}";
             return buffer;
         }
         else
         {
             buffer += "{ ";
+            buffer += "\"mode\": \"newdata\",\n";
             buffer += "\"load\":" + String(load_state_binary_sensor_) + ",\n";
             buffer += "\"MaxPower\":{\n";
             buffer += "\"yesterday\":" + String(max_power_yesterday_sensor_) + ",\n";

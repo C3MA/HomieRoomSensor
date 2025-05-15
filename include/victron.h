@@ -14,6 +14,8 @@
 #include <stdint.h>
 #include <Homie.h>
 
+#define VICTRON_THROTTLE 100
+
 namespace victron
 {
 
@@ -55,7 +57,6 @@ namespace victron
         std::string value_;
         uint32_t last_transmission_;
         uint32_t last_publish_;
-        uint32_t throttle_;
 
 
         /* All Settings */
