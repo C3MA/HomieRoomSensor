@@ -29,11 +29,11 @@ namespace victron
         String toJson(void);
 
         int getBatteryVoltage() {
-            return battery_voltage_sensor_;
+            return (battery_voltage_sensor_ / 1000);
         }
 
         int getPanelVoltage() {
-            return panel_voltage_sensor_;
+            return (panel_voltage_sensor_ / 1000);
         }
 
         int getPanelPower() {
