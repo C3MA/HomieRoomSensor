@@ -84,11 +84,8 @@ namespace victron
         bool load_state_binary_sensor_;
 
         std::string alarm_condition_active_text_sensor_;
-
         std::string firmware_version_text_sensor_;
         long device_type_text_sensor_;
-        std::string serial_number_text_sensor_;
-
     };
 
 }  // namespace victron

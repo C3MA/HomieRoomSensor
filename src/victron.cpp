@@ -220,11 +220,6 @@ namespace victron {
             return;
         }
 
-        if (label_ == "SER#") {
-            serial_number_text_sensor_ = value_;
-            return;
-        }
-
         if (label_ == "HSDS") {
             day_number_sensor_ = atoi(value_.c_str());
             return;
