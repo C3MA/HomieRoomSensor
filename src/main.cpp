@@ -164,6 +164,16 @@ uint32_t      mMeasureIndex = 0;
  *****************************************************************************/
 
 /**
+ * @brief Log Victron communication plain to MQTT
+ * 
+ * @param uartLine one complete line, received on VC.Direct Bus
+ */
+void mqttLog_callback(std::string uartLine)
+{
+  log(MQTT_LEVEL_DEBUG, String(uartLine.c_str()), MQTT_LOG_VICTRON);
+}
+
+/**
  * @brief Get the Sensor Data from software serial
  * 
  * @return int PM25 value
@@ -229,6 +239,7 @@ void onHomieEvent(const HomieEvent &event)
     break;
   case HomieEventType::MQTT_READY:
     mConnected=true;
+    mppt.activateDebugging(mqttLog_callback);
     digitalWrite(WITTY_RGB_R, LOW);
     if (!i2cEnable.get()) { /** keep green LED activated to power I2C sensor */
       digitalWrite(WITTY_RGB_G, LOW);
@@ -300,6 +311,7 @@ void bmpPublishValues() {
       strip.show();
   }
 }
+
 
 /**
  * @brief Main loop, triggered by the Homie API

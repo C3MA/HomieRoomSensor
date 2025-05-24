@@ -26,9 +26,8 @@ namespace victron {
         this->state_ = initialstate;
     }
 
-    VictronComponent::VictronComponent(int initialstate, debug_serialcommunication debugFunction)
+    void VictronComponent::activateDebugging(debug_serialcommunication debugFunction)
     {
-        this->state_ = initialstate;
         this->fdebugSerial = debugFunction;
     }
 
@@ -167,7 +166,7 @@ namespace victron {
         }
 
         if (label_ == "Alarm") {
-            alarm_condition_active_text_sensor_ = value_;
+            /* Skip Alarm */
             return;
         }
 
@@ -210,7 +209,7 @@ namespace victron {
 
 
         if (label_ == "FW") {
-            firmware_version_text_sensor_ = value_.insert(value_.size() - 2, ".");
+            /* Skip firmware */
             return;
         }
 
@@ -278,9 +277,7 @@ namespace victron {
             buffer += "\"ErrorText\": \"" + String(error_code_text(error_code_sensor_).c_str()) + "\",\n";
             buffer += "\"TrackingMode\": \"" + String(tracking_mode_text(tracking_mode_id_sensor_).c_str()) + "\",\n";
             buffer += "\"ChargingMode\": \"" + String(charging_mode_text(charging_mode_id_sensor_).c_str()) + "\",\n";
-            buffer += "\"FirmwareVersion\": \"" + String(firmware_version_text_sensor_.c_str()) + "\",\n";
             buffer += "\"DeviceType\": \"" + String(device_type_text(device_type_text_sensor_).c_str() ) + "\",\n";
-            buffer += "\"AlarmConditionActive\": \"" + String(alarm_condition_active_text_sensor_.c_str()) + "\"\n";
             buffer += "}";
             return buffer;
         }

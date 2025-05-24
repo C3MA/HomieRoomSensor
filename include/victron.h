@@ -25,7 +25,6 @@ namespace victron
     {
     public:
         VictronComponent(int initialstate);
-        VictronComponent(int initialstate, debug_serialcommunication debugFunction);
         VictronComponent();
         ~VictronComponent();
         void loop(void);
@@ -46,6 +45,8 @@ namespace victron
         bool hasData() {
             return (battery_voltage_sensor_ > 0);
         }
+
+        void activateDebugging(debug_serialcommunication debugFunction);
 
     private:
         void handle_value_();
@@ -83,8 +84,6 @@ namespace victron
 
         bool load_state_binary_sensor_;
 
-        std::string alarm_condition_active_text_sensor_;
-        std::string firmware_version_text_sensor_;
         long device_type_text_sensor_;
     };
 
