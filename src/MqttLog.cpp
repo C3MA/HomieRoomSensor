@@ -23,6 +23,7 @@ void log(int level, String message, int statusCode)
   String buffer;
   StaticJsonDocument<200> doc;
   doc["level"] = level;
+  doc["uptime"] = String(millis());
   doc["message"] = message;
   doc["statusCode"] = statusCode;
   serializeJson(doc, buffer);
