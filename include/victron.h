@@ -16,6 +16,8 @@
 
 #define VICTRON_THROTTLE 100
 
+typedef void (*debug_serialcommunication) (std::string);
+
 namespace victron
 {
 
@@ -23,6 +25,7 @@ namespace victron
     {
     public:
         VictronComponent(int initialstate);
+        VictronComponent(int initialstate, debug_serialcommunication debugFunction);
         VictronComponent();
         ~VictronComponent();
         void loop(void);
@@ -55,9 +58,11 @@ namespace victron
         int state_;
         std::string label_;
         std::string value_;
+        std::string complete_line_;
         uint32_t last_transmission_;
         uint32_t last_publish_;
 
+        debug_serialcommunication fdebugSerial = NULL;
 
         /* All Settings */
         int max_power_yesterday_sensor_ = 0;

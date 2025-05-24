@@ -26,6 +26,12 @@ namespace victron {
         this->state_ = initialstate;
     }
 
+    VictronComponent::VictronComponent(int initialstate, debug_serialcommunication debugFunction)
+    {
+        this->state_ = initialstate;
+        this->fdebugSerial = debugFunction;
+    }
+
     void VictronComponent::logTextSensor(String tag, String message, std::string text)
     {
         String complete = message + " : " +  String(text.c_str());
@@ -60,8 +66,20 @@ namespace victron {
         while (Serial.available()) {
             uint8_t c;
             c = Serial.read();
+
+            if (fdebugSerial) /* debugging enabled */
+            {
+                /* always store the incoming data */
+                complete_line_.push_back(c);
+            }
+
             if (state_ == 0) {
             if (c == '\r' || c == '\n') {
+                if ( (fdebugSerial) /* debugging enabled */ && (complete_line_.length() > 0) )
+                {
+                    fdebugSerial(complete_line_);
+                    complete_line_.clear();
+                }
                 continue;
             }
             label_.clear();
