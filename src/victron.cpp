@@ -8,6 +8,7 @@
  * https://github.com/KinDR007/VictronMPPT-ESPHOME/blob/main/components/victron/victron.cpp
  */
 
+#ifdef VICTRON
 #include "victron.h"
 #include "MqttLog.h"
 #include "VictronTexts.h"
@@ -283,3 +284,4 @@ namespace victron {
         }
     }
 }
+#endif /* VICTRON */ 

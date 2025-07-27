@@ -239,7 +239,9 @@ void onHomieEvent(const HomieEvent &event)
     break;
   case HomieEventType::MQTT_READY:
     mConnected=true;
+#ifdef VICTRON
     mppt.activateDebugging(mqttLog_callback);
+#endif
     digitalWrite(WITTY_RGB_R, LOW);
     if (!i2cEnable.get()) { /** keep green LED activated to power I2C sensor */
       digitalWrite(WITTY_RGB_G, LOW);
@@ -439,10 +441,10 @@ void setup()
   Homie.setLoopFunction(loopHandler);
   Homie.onEvent(onHomieEvent);
   i2cEnable.setDefaultValue(false);
-  deepsleepMppt.setDefaultValue(false);
 #if VICTRON
-  rgbTemp.setDefaultValue(false);
+  deepsleepMppt.setDefaultValue(false);
 #endif
+  rgbTemp.setDefaultValue(false);
 
   rgbDim.setDefaultValue(100).setValidator([] (long candidate) {
     return (candidate > 1) && (candidate <= 200);
